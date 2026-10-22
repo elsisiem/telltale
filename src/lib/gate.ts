@@ -4,6 +4,7 @@ import { db } from "./db";
 import { emit } from "./events";
 import { decide, type Action, type Decision, type FieldDecision, type FieldKind } from "./policy";
 import { buildReceipt, type ConsentReceipt } from "./receipts";
+import { loadRegistry, type Broker } from "./registry";
 import { resolveRecipient, type Recipient } from "./resolver";
 import { assessRisk, type Finding, type RiskProfile } from "./risk";
 import { loadProfile, mintTagCode, valueFor } from "./vault";
@@ -71,7 +72,12 @@ export function getPending(id: string): PendingView | undefined {
 }
 
 export async function preview(req: DisclosureRequest): Promise<Omit<PendingView, "id" | "createdAt" | "status">> {
-  const recipient = resolveRecipient(req.url, { orgName: req.orgName });
+  let recipient = resolveRecipient(req.url, { orgName: req.orgName });
+  if (!recipient.brokers.length && process.env.EXA_API_KEY) {
+    const { companyFor } = await import("./integrations/exa");
+    const company = await companyFor(recipient.domain);
+    if (company) recipient = resolveRecipient(req.url, { orgName: company });
+  }
   const extra = g.__telltaleExtraFindings ? await g.__telltaleExtraFindings(recipient) : [];
   const risk = assessRisk(recipient, extra);
   const base = decide(req.fields, risk);
@@ -180,7 +186,13 @@ async function finalize(view: PendingView, prompted: boolean, prior: PriorDisclo
   const thisStep = view.decision.fields.map(({ selector, kind, label, action }) => ({ selector, kind, label, action }));
   const allFields = prior ? [...prior.fields.filter((p) => !thisStep.some((f) => f.kind === p.kind)), ...thisStep] : thisStep;
 
-  const recipient = resolveRecipient(view.request.url, { orgName: view.request.orgName });
+  const registry = loadRegistry();
+  const recipient: Recipient = {
+    host: view.recipient.host,
+    domain: view.recipient.domain,
+    matchedBy: view.recipient.matchedBy,
+    brokers: view.recipient.brokers.map((b) => registry.find((r) => r.id === b.id)).filter((b): b is Broker => !!b),
+  };
   const receipt = buildReceipt({
     recipient,
     risk: view.risk,

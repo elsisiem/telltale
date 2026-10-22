@@ -1,5 +1,5 @@
 import { chromium } from "playwright";
-import { snapshot } from "./src/lib/agent/browser";
+import { snapshot } from "../src/lib/agent/browser";
 const urls = process.argv.slice(2);
 (async () => {
   const b = await chromium.launch({ headless: true });
