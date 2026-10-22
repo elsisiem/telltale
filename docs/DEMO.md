@@ -15,7 +15,7 @@ Setup before going on stage:
 
 On `/daylight`, press **Run sweep**. 603 tiles fill in as the sweep runs, which takes about a minute. Keep talking while it runs; if needed, the committed snapshot is already on screen.
 
-> "Every California data broker must list a page where you can opt out. We check all 603 of them, live. **55 hide that page from search engines.** Spokeo sends `X-Robots-Tag: noindex` on its own privacy-control page." (Click the Spokeo tile to show the verbatim header.)
+> "Every California data broker must list a page where you can opt out. We check all 603 of them, live. **55 list a privacy page that search engines are told to ignore, and 18 do it to their own opt-out page.** Spokeo sends `X-Robots-Tag: noindex` on its privacy-control page." (Click the Spokeo tile to show the verbatim header.)
 
 ## 0:50–2:00 · Console: know and mark
 

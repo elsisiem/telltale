@@ -17,7 +17,7 @@ Personal AI agents now fill in forms for us: insurance quotes, sign-ups, booking
 ## What we found in the public data
 
 - **Lead-generation sites that look like helpful quote tools are registered data brokers.** Example: `bestautoinsurance.com`, `medicareinfo.org` and `nationalhomequotes.com` are operated by Apollo Interactive, LLC. In its own filing it reports denying **13,539 of 15,040** deletion requests in 2024. `autotrader.com` is filed under Cox Automotive, which reports collecting precise geolocation, biometric data and citizenship data.
-- **55 of 603 registered brokers' listed privacy-rights pages were hidden from search engines** in our sweep on 2026-10-22, among them Spokeo (`X-Robots-Tag: noindex` on its privacy-control page), Uplead, Datafy and RecordsFinder. Every finding stores the verbatim tag, header or robots.txt rule as evidence (`pnpm daylight`).
+- **55 of 603 registered brokers' listed privacy-rights pages were hidden from search engines** in our sweep on 2026-10-22. **18 hide their own opt-out page**, among them Spokeo (`X-Robots-Tag: noindex` on its privacy-control page), Uplead, Datafy and RecordsFinder. Of the rest, 29 hide a privacy-policy page and 8 route requests to a vendor portal that blocks crawlers; those get softer wording. Every finding stores the verbatim tag, header or robots.txt rule as evidence (`pnpm daylight`).
 
 ## Privacy by design
 
