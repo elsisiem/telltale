@@ -23,13 +23,11 @@ let provider: AliasProvider | null = null;
 
 export async function aliasProvider(): Promise<AliasProvider> {
   if (provider) return provider;
-  if (process.env.AGENTMAIL_API_KEY) {
-    const { agentMailProvider } = await import("./integrations/agentmail");
-    provider = agentMailProvider();
-  } else {
-    provider = plusAddressing;
-  }
-  return provider;
+  const chosen = process.env.AGENTMAIL_API_KEY
+    ? (await import("./integrations/agentmail")).agentMailProvider()
+    : plusAddressing;
+  provider = chosen;
+  return chosen;
 }
 
 export function _setAliasProvider(p: AliasProvider | null) {

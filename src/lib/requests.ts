@@ -41,6 +41,8 @@ export function setSender(s: Sender | null) {
 
 async function deliver(to: string, subject: string, body: string, fromAlias: string | null): Promise<string> {
   if (sender) return sender(to, subject, body, fromAlias);
+  // Never send legal requests to a real company on behalf of the synthetic stage persona.
+  if (loadProfile().synthetic) return "manual";
   if (process.env.AGENTMAIL_API_KEY) {
     const { agentMailSend } = await import("./integrations/agentmail");
     return agentMailSend(to, subject, body, fromAlias);
@@ -106,7 +108,7 @@ async function insert(r: RequestRow) {
 export async function draftComplaint(leakId: string): Promise<{ id: string; title: string; body: string }> {
   const d = await db();
   const { rows } = await d.query<{ id: string; disclosure_id: string; sender_domain: string; sender_broker_ids: string[]; evidence: {
-    observed: { channel: string; from: string; to: string; senderDomain: string; at: string; subject?: string };
+    observed: { channel: string; from: string; to: string; senderDomain: string; at: string; subject?: string; replay?: boolean };
     violation: { requestIds: string[] } | null;
   } }>("select * from leaks where id = $1", [leakId]);
   const leak = rows[0];
@@ -128,6 +130,10 @@ export async function draftComplaint(leakId: string): Promise<{ id: string; titl
       ? { target: req.target_domain, sentAt: new Date(req.sent_at).toISOString(), due: new Date(req.due_at).toISOString() }
       : undefined,
   });
+  if (leak.evidence.observed.replay) {
+    draft.title = `SIMULATION · ${draft.title}`;
+    draft.body = `SIMULATION. The contact below was replayed for demonstration from a fictional sender; it is not a real event and must not be filed.\n\n${draft.body}`;
+  }
   const id = crypto.randomUUID();
   await d.query("insert into complaints (id, leak_id, request_id, body) values ($1,$2,$3,$4)", [id, leakId, reqId ?? null, draft.body]);
   return { id, ...draft };

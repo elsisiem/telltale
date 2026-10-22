@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { aliasProvider } from "./aliases";
 import { db } from "./db";
 import { emit } from "./events";
-import { decide, type Action, type Decision, type FieldKind } from "./policy";
+import { decide, type Action, type Decision, type FieldDecision, type FieldKind } from "./policy";
 import { buildReceipt, type ConsentReceipt } from "./receipts";
 import { resolveRecipient, type Recipient } from "./resolver";
 import { assessRisk, type Finding, type RiskProfile } from "./risk";
@@ -29,7 +29,7 @@ export type PendingView = {
   request: DisclosureRequest;
   recipient: { host: string; domain: string; matchedBy: Recipient["matchedBy"]; brokers: { id: string; name: string; dba: string | null; website: string }[] };
   risk: RiskProfile;
-  decision: Decision & { fields: (Decision["fields"][number] & { selector: string })[] };
+  decision: Omit<Decision, "fields"> & { fields: (FieldDecision & { selector: string })[] };
 };
 
 export type GateResult =
