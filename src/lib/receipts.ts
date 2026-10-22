@@ -34,6 +34,13 @@ function canonical(v: unknown): string {
 }
 
 function keys(): { privateKey: crypto.KeyObject; publicKeyPem: string } {
+  // Deployed: the signing key comes from a secret (base64 of the PEM) so receipts stay verifiable
+  // across restarts and redeploys. Local: a key file generated on first use.
+  const fromEnv = process.env.TELLTALE_RECEIPT_KEY?.trim();
+  if (fromEnv) {
+    const privateKey = crypto.createPrivateKey(Buffer.from(fromEnv, "base64").toString("utf8"));
+    return { privateKey, publicKeyPem: crypto.createPublicKey(privateKey).export({ type: "spki", format: "pem" }).toString() };
+  }
   const dir = path.join(DATA_DIR, "keys");
   const file = path.join(dir, "receipt-ed25519.pem");
   if (!fs.existsSync(file)) {

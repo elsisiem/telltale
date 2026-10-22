@@ -88,7 +88,9 @@ let dbPromise: Promise<Db> | null = null;
 async function open(): Promise<Db> {
   const url = process.env.DATABASE_URL?.trim();
   if (url) {
-    const { Pool } = await import("@neondatabase/serverless");
+    const { Pool, neonConfig } = await import("@neondatabase/serverless");
+    // Node < 22 has no global WebSocket, which the Neon driver needs for its pooled connection.
+    if (typeof WebSocket === "undefined") neonConfig.webSocketConstructor = (await import("ws")).default;
     const pool = new Pool({ connectionString: url });
     const db: Db = { query: (sql, params) => pool.query(sql, params) as never };
     await db.query(SCHEMA);

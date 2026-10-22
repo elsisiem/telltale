@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.claude
+.telltale
+.env*
+!.env.example
+scripts/screens
+coverage
+*.log
