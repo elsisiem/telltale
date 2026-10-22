@@ -26,6 +26,8 @@ export type ScanOptions = {
   /** Overrides the registry (tests point fake brokers at a local server). */
   brokers?: Broker[];
   check?: CheckOptions;
+  /** Lets a caller (the API route) know the id before the scan finishes. */
+  scanId?: string;
 };
 
 export function urlsFor(b: Broker): string[] {
@@ -50,7 +52,7 @@ export async function runScan(opts: ScanOptions = {}): Promise<{ scanId: string;
   if (opts.limit !== undefined) brokers = brokers.slice(0, opts.limit);
 
   const d = await db();
-  const scanId = crypto.randomUUID();
+  const scanId = opts.scanId ?? crypto.randomUUID();
   const startedAt = new Date().toISOString();
   await d.query("insert into scans (id, started_at) values ($1, $2)", [scanId, startedAt]);
 

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { db } from "../db";
+import { registrableDomain } from "../domains";
 import { setExtraFindings } from "../gate";
 import type { Recipient } from "../resolver";
 import type { Finding } from "../risk";
@@ -24,7 +25,7 @@ export type Snapshot = {
   }[];
 };
 
-type Hidden = { brokerId: string; signals: Signal[] };
+type Hidden = { brokerId: string; url: string; signals: Signal[] };
 
 async function fromDb(ids: string[]): Promise<{ observed: string; hidden: Hidden[] } | null> {
   const d = await db();
@@ -40,6 +41,7 @@ async function fromDb(ids: string[]): Promise<{ observed: string; hidden: Hidden
     observed: new Date(rows[0].finished_at).toISOString(),
     hidden: hits.map((h) => ({
       brokerId: h.broker_id,
+      url: h.url,
       signals: typeof h.signals === "string" ? (JSON.parse(h.signals) as Signal[]) : h.signals,
     })),
   };
@@ -64,8 +66,16 @@ function fromSnapshot(ids: string[]): { observed: string; hidden: Hidden[] } | n
     observed: snap.finishedAt,
     hidden: snap.brokers
       .filter((b) => want.has(b.id))
-      .flatMap((b) => b.urls.filter((u) => u.status === "hidden").map((u) => ({ brokerId: b.id, signals: u.signals }))),
+      .flatMap((b) => b.urls.filter((u) => u.status === "hidden").map((u) => ({ brokerId: b.id, url: u.url, signals: u.signals }))),
   };
+}
+
+const OPT_OUT_PATH = /opt-?out|choices|do-?not-?sell|donotsell|rights|control|privacy-form|delete|request|preferences/i;
+
+function classify(url: string, brokerDomains: string[]): "own-optout" | "own-policy" | "vendor-portal" {
+  const domain = registrableDomain(url);
+  if (!domain || !brokerDomains.includes(domain)) return "vendor-portal";
+  return OPT_OUT_PATH.test(new URL(/^https?:/i.test(url) ? url : `https://${url}`).pathname) ? "own-optout" : "own-policy";
 }
 
 const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
@@ -84,15 +94,22 @@ export async function daylightFindings(recipient: Recipient): Promise<Finding[]>
 
   const out: Finding[] = [];
   for (const b of recipient.brokers) {
-    const evidence = scan.hidden
+    const hits = scan.hidden
       .filter((h) => h.brokerId === b.id)
-      .flatMap((h) => h.signals)
-      .find((s) => HIDING_SIGNALS.includes(s.type));
-    if (!evidence) continue;
+      .map((h) => ({ ...h, evidence: h.signals.find((s) => HIDING_SIGNALS.includes(s.type)) }))
+      .filter((h) => h.evidence)
+      .map((h) => ({ ...h, kind: classify(h.url, b.domains) }));
+    // Report the most damning page: the broker's own opt-out page, then its policy, then a vendor portal.
+    const hit = (["own-optout", "own-policy", "vendor-portal"] as const).map((k) => hits.find((h) => h.kind === k)).find(Boolean);
+    if (!hit?.evidence) continue;
+    const seen = `observed ${scan.observed.slice(0, 10)}: ${truncate(hit.evidence.detail, 120)}`;
     out.push({
       key: "hidden-optout",
-      severity: "high",
-      text: `hides its consumer privacy-rights page from search engines (observed ${scan.observed.slice(0, 10)}: ${truncate(evidence.detail, 120)})`,
+      severity: hit.kind === "own-optout" ? "high" : "medium",
+      text:
+        hit.kind === "own-optout" ? `hides its own opt-out page from search engines (${seen})`
+        : hit.kind === "own-policy" ? `lists a privacy page for consumer rights that is hidden from search engines (${seen})`
+        : `routes consumer requests to a third-party portal that blocks search engines (${seen})`,
       entity: b.name,
       source: "daylight",
     });

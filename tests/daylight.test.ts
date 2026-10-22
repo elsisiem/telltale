@@ -178,9 +178,15 @@ describe("runScan + findings", () => {
     const { rows: scans } = await d.query<{ summary: { totalBrokers: number } }>("select summary from scans where id = $1", [scanId]);
     expect(scans[0].summary.totalBrokers).toBe(3);
 
+    // The fixture server is not on the broker's own domain, so it reads as a vendor portal.
     const findings = await daylightFindings({ host: "sneaky.test", domain: "sneaky.test", matchedBy: "registry-domain", brokers });
     expect(findings).toHaveLength(1);
-    expect(findings[0]).toMatchObject({ key: "hidden-optout", severity: "high", entity: "sneaky Inc", source: "daylight" });
-    expect(findings[0].text).toMatch(/^hides its consumer privacy-rights page from search engines \(observed \d{4}-\d{2}-\d{2}: <meta content="noindex/);
+    expect(findings[0]).toMatchObject({ key: "hidden-optout", severity: "medium", entity: "sneaky Inc", source: "daylight" });
+    expect(findings[0].text).toMatch(/^routes consumer requests to a third-party portal that blocks search engines \(observed \d{4}-\d{2}-\d{2}: <meta content="noindex/);
+
+    // Served from the broker's own domain at an opt-out path, the same evidence is high severity.
+    const own = brokers.map((b) => (b.id === "sneaky" ? { ...b, domains: ["127.0.0.1"] } : b));
+    const ownFindings = await daylightFindings({ host: "sneaky.test", domain: "sneaky.test", matchedBy: "registry-domain", brokers: own });
+    expect(ownFindings[0].severity).toBe(own[0].rightsUrls.some((u) => /opt|rights|choices/.test(u)) ? "high" : "medium");
   });
 });
