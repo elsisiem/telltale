@@ -35,7 +35,7 @@ async function main() {
     { selector: "#phone", kind: "phone", label: "Phone", required: true },
     { selector: "#zip", kind: "zip", label: "ZIP" },
   ];
-  const dental = await requestDisclosure({ url: "https://www.bayviewdental.example/book", purpose: "Book a dental cleaning", fields: dentalForm });
+  const dental = await requestDisclosure({ url: "https://bayview-dental.fly.dev/", purpose: "Book a dental cleaning", fields: dentalForm });
   console.log("dental:", dental.status, dental.status === "approved" ? `${dental.tagCode} prompted=${dental.prompted}` : "");
 
   const brokerForm: FormField[] = [

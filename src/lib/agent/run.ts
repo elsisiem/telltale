@@ -102,8 +102,12 @@ const SUBMIT_RE = /submit|get (my )?(free )?quotes?|see (my )?(rates|quotes)|sig
 const LOCAL_URL = /\b(localhost|127\.0\.0\.1)(:\d+)?\b/;
 
 /** This app's own fictional demo pages (locally, or at TELLTALE_PUBLIC_URL when deployed). */
+// Fictional businesses Telltale controls for demos (comma-separated hosts). Submitting there is safe.
+const DEMO_HOSTS = new Set((process.env.TELLTALE_DEMO_HOSTS ?? "bayview-dental.fly.dev").split(",").map((h) => h.trim()).filter(Boolean));
+
 function isOwnDemoPage(url: string): boolean {
   const u = new URL(url);
+  if (DEMO_HOSTS.has(u.host)) return true;
   const own = process.env.TELLTALE_PUBLIC_URL ? new URL(process.env.TELLTALE_PUBLIC_URL).host : null;
   return (LOCAL_URL.test(u.host) || u.host === own) && u.pathname.startsWith("/demo/");
 }

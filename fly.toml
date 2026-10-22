@@ -10,6 +10,7 @@ primary_region = "ord"
   PORT = "3000"
   TELLTALE_MODEL = "claude-sonnet-5-5"
   TELLTALE_PUBLIC_URL = "https://telltale-app.fly.dev"
+  TELLTALE_DEMO_HOSTS = "bayview-dental.fly.dev"
 
 [http_service]
   internal_port = 3000

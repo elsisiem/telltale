@@ -8,3 +8,4 @@ node_modules
 scripts/screens
 coverage
 *.log
+demo-site

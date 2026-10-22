@@ -6,7 +6,7 @@ import type { CardView } from "./types";
 import { useToast } from "./Toast";
 import { Button, Icon } from "./ui";
 
-const PREVIEW_SUGGESTIONS = ["https://www.bestautoinsurance.com", "https://www.spokeo.com/signup", "https://www.uplead.com", "https://rocketreach.co/signup"];
+const PREVIEW_SUGGESTIONS = ["https://www.bestautoinsurance.com", "https://www.spokeo.com/signup", "https://www.uplead.com", "https://bayview-dental.fly.dev"];
 
 export function StagePanel({ open, onClose, onPreview, onRefresh }: { open: boolean; onClose: () => void; onPreview: (v: CardView) => void; onRefresh: () => void }) {
   const toast = useToast();

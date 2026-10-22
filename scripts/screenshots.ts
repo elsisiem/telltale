@@ -31,7 +31,7 @@ async function main() {
   };
   await shot("consent-broker-1440", "/", { width: 1440, height: 900 }, openPreview("https://rocketreach.co/signup"));
   await shot("consent-broker-1280", "/", { width: 1280, height: 720 }, openPreview("https://rocketreach.co/signup"));
-  await shot("consent-ordinary-1440", "/", { width: 1440, height: 900 }, openPreview("https://www.bayviewdental.example/book"));
+  await shot("consent-ordinary-1440", "/", { width: 1440, height: 900 }, openPreview("https://bayview-dental.fly.dev/"));
   await shot("stage-panel", "/", { width: 1440, height: 900 }, async (p) => {
     await p.keyboard.press("d");
     await p.waitForTimeout(400);

@@ -22,7 +22,8 @@ Personal AI agents now fill in forms for us: insurance quotes, sign-ups, booking
 ## Privacy by design
 
 - **The model never sees personal data.** The agent describes form fields by kind (`email`, `zip`…); the gate fills in the values itself. Claude only learns the outcome ("tagged", "withheld").
-- **The vault stays on the device** (`.telltale/profile.json`, git-ignored).
+- **The person's details are encrypted at rest.** The Profile page saves them AES-256-GCM-encrypted in the database. The key is held apart from the data: `TELLTALE_VAULT_KEY` when deployed, a git-ignored key file when local. With no saved profile, Telltale runs as the synthetic persona.
+- **Dry run is a setting.** It is always on for the synthetic persona. With a real profile, the person chooses whether the agent may press submit after they release their data.
 - **Fields where the law expects the truth are never altered** (SSN, government ID, financial account, date of birth). The only choice is whether to disclose them at all.
 - **The stage persona is synthetic.** In that mode Telltale never emails real companies and never submits contact details to a real business (dry run).
 - **Simulations are labeled.** The "Day 47" leak replay uses a fictional sender on a reserved `.example` domain, and every artifact it produces is stamped SIMULATION.
@@ -59,11 +60,16 @@ pnpm daylight                # live sweep of all 603 brokers (~1 min)
 
 Telltale runs at **https://telltale-app.fly.dev**: one always-on Fly.io machine in Chicago (`ord`), next to its Neon Postgres in AWS us-east-2. It is behind HTTP Basic auth (user `telltale`); only the fictional demo pages under `/demo/` are public, so a cloud browser can load them.
 
+The fictional dental office used as the "ordinary website" lives at **https://bayview-dental.fly.dev**. It is a separate static site (`demo-site/`) that sleeps when idle, so the demo shows data going to an outside business rather than to Telltale itself.
+
 ```bash
 fly deploy --remote-only --ha=false     # builds the Docker image on Fly; no local Docker needed
-fly secrets import < secrets.env         # ANTHROPIC_*, AGENTMAIL_API_KEY, KERNEL_API_KEY, EXA_API_KEY,
-                                         # DATABASE_URL, TELLTALE_PASSWORD, TELLTALE_RECEIPT_KEY
+fly secrets import < secrets.env         # ANTHROPIC_*, AGENTMAIL_API_KEY, KERNEL_API_KEY, EXA_API_KEY, DATABASE_URL,
+                                         # TELLTALE_PASSWORD, TELLTALE_RECEIPT_KEY, TELLTALE_VAULT_KEY
+(cd demo-site && fly deploy --remote-only --ha=false)
 ```
+
+- **A sweep runs on the server.** It keeps going if you leave the Daylight page, progress shows in the top bar on every page, and the board picks it back up when you return.
 
 - **One machine on purpose.** Pending consent cards and the live event stream live in that process's memory, so the app never scales out and never sleeps.
 - **Receipt key as a secret.** The Ed25519 receipt key is supplied as `TELLTALE_RECEIPT_KEY` (base64 PEM), so receipts verify across restarts.

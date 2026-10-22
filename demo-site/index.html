@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bayview Dental · Book a cleaning</title>
+  <meta property="og:site_name" content="Bayview Dental">
+  <meta name="robots" content="noindex">
+  <style>
+    :root { --green: #2f6f62; --ink: #1d2b28; --line: #b9c7c3; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f6f8f7; color: var(--ink); font: 16px/1.5 Georgia, "Times New Roman", serif; }
+    header { background: var(--green); color: #fff; padding: 18px 32px; display: flex; align-items: baseline; gap: 12px; }
+    header strong { font-size: 22px; }
+    header span { font-size: 13px; opacity: .8; }
+    main { max-width: 520px; margin: 40px auto; padding: 0 20px; }
+    h1 { font-size: 28px; margin: 0 0 6px; }
+    p.lead { margin: 0 0 24px; color: #4b5d59; }
+    form { display: grid; gap: 14px; }
+    label { display: grid; gap: 4px; font-size: 15px; }
+    input, select { padding: 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; background: #fff; }
+    button { padding: 12px; background: var(--green); color: #fff; border: 0; border-radius: 6px; font: inherit; font-size: 16px; cursor: pointer; }
+    .done { padding: 18px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+    footer { max-width: 520px; margin: 0 auto 40px; padding: 0 20px; font-size: 12px; color: #6b7d79; }
+  </style>
+</head>
+<body>
+  <header><strong>Bayview Dental</strong><span>fictional business · Telltale demo</span></header>
+  <main>
+    <h1>Book a cleaning</h1>
+    <p class="lead">Pick a reason and leave your details; we'll email you to confirm a time.</p>
+    <form id="book">
+      <label for="name">Full name <input id="name" name="name" autocomplete="name" required></label>
+      <label for="email">Email <input id="email" name="email" type="email" autocomplete="email" required></label>
+      <label for="phone">Phone <input id="phone" name="phone" type="tel" autocomplete="tel"></label>
+      <label for="zip">ZIP code <input id="zip" name="zip" autocomplete="postal-code"></label>
+      <label for="reason">Reason for visit
+        <select id="reason" name="reason"><option>Cleaning</option><option>Checkup</option><option>Tooth pain</option></select>
+      </label>
+      <button type="submit">Request appointment</button>
+    </form>
+  </main>
+  <footer>This office does not exist. Nothing entered here is stored or sent anywhere.</footer>
+  <script>
+    document.getElementById("book").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var name = document.getElementById("name").value.split(" ")[0] || "there";
+      this.outerHTML = '<div class="done">Thanks, ' + name.replace(/[<>&]/g, "") + '. We’ll email you to confirm a time.</div>';
+    });
+  </script>
+</body>
+</html>

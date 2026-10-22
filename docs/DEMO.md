@@ -4,8 +4,10 @@ Setup before going on stage:
 - Open **https://telltale-app.fly.dev** and sign in (user `telltale`, password from `.env.local`). Press **d** once to confirm the stage panel opens.
 - Press **Reset demo** in the stage panel. This clears earlier runs and frees Telltale's own AgentMail inboxes.
 - **Warm-up:** run the car-insurance preset once before going on stage. If Kernel's browser crashes on that site, Telltale remembers it and goes straight to its bundled browser next time, which saves about 15 seconds.
-- Have `/daylight` open in a second tab.
-- The agent's browser shows in the console as a live screenshot stream; no extra window is needed.
+- Have `/daylight` open in a second tab. A sweep keeps running if you switch tabs or pages; the top bar shows its progress.
+- The agent's browser shows in the console as a live screenshot stream. Press **Expand** on it, or click the picture, to show the browser full-size for the room.
+- **Guide** (or `?`) opens a one-page explanation of the pipeline and every mark on screen. It's a good backup if a judge asks what a tag means.
+- In the ledger, **Inspect** on any entry shows that disclosure in the pipeline; **back to latest** returns to the live view.
 
 ## 0:00–0:20 · The hook
 

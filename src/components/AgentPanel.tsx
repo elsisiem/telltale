@@ -7,8 +7,8 @@ import { Button, Card, CardHeader, Icon, Tag } from "./ui";
 
 // Stage presets. Edit freely: `label` is the chip text, `task` is what the agent receives.
 export const PRESETS: { label: string; task: string }[] = [
-  // {origin} becomes this app's address: the dental office is a fictional demo page served by Telltale.
-  { label: "Dental cleaning", task: "Book a dental cleaning at {origin}/demo/dental using my details" },
+  // Bayview Dental is a fictional office Telltale hosts for demos; {origin} would point at this app.
+  { label: "Dental cleaning", task: "Book a dental cleaning at https://bayview-dental.fly.dev using my details" },
   { label: "Car insurance quotes", task: "Get me car insurance quotes at https://www.bestautoinsurance.com for my 2019 Honda Civic. Use my details where the form asks." },
   { label: "People-search account", task: "Create a free account at https://www.spokeo.com so I can check what it shows about me" },
 ];
