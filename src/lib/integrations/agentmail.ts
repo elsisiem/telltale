@@ -4,8 +4,11 @@ import { db } from "../db";
 import { ingestObservation } from "../leaks";
 
 // AgentMail gives every recipient its own real inbox, so a tagged address is a working mailbox
-// that Telltale can read, not just a label. The free tier allows 3 inboxes; past that, aliases
-// fall back to plus-addressing.
+// that Telltale can read, not just a label. At the plan's inbox limit Telltale reclaims its own unused
+// inboxes; failing that, aliases fall back to plus-addressing.
+
+// Every inbox Telltale creates carries this client id prefix; only those are ever deleted.
+const CLIENT_PREFIX = "telltale-";
 
 let client: AgentMailClient | null = null;
 function am(): AgentMailClient {
@@ -17,19 +20,52 @@ export function agentMailProvider(): AliasProvider {
   return {
     name: "agentmail",
     async create(code, _domain, profile) {
-      try {
-        const inbox = await am().inboxes.create({
+      const attempt = () =>
+        am().inboxes.create({
           username: `${profile.firstName}.${code}`.toLowerCase(),
           displayName: profile.firstName,
-          clientId: `telltale-${code}`,
+          clientId: `${CLIENT_PREFIX}${code}`,
         });
-        return inbox.email;
+      try {
+        return (await attempt()).email;
       } catch (err) {
-        console.warn(`[agentmail] inbox create failed (${(err as Error).message}); using plus-addressing`);
+        // At the plan's inbox limit, free one of our own inboxes that no disclosure uses any more.
+        if (/limit/i.test((err as Error).message) && (await reclaimInbox())) {
+          try {
+            return (await attempt()).email;
+          } catch {}
+        }
+        const reason = (err as Error).message.split("\n")[0];
+        console.warn(`[agentmail] inbox create failed (${reason}); using plus-addressing`);
         return plusAddressing.create(code, _domain, profile);
       }
     },
   };
+}
+
+async function ownInboxes() {
+  const { inboxes } = await am().inboxes.list({ limit: 100 });
+  return inboxes.filter((i) => i.clientId?.startsWith(CLIENT_PREFIX));
+}
+
+/** Delete the oldest Telltale inbox not referenced by any disclosure. */
+async function reclaimInbox(): Promise<boolean> {
+  const d = await db();
+  const { rows } = await d.query<{ alias_email: string }>("select lower(alias_email) as alias_email from disclosures where alias_email is not null");
+  const used = new Set(rows.map((r) => r.alias_email));
+  const orphan = (await ownInboxes())
+    .filter((i) => !used.has(i.email.toLowerCase()))
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
+  if (!orphan) return false;
+  await am().inboxes.delete(orphan.inboxId);
+  return true;
+}
+
+/** Demo reset: remove every inbox Telltale created (never anyone else's). */
+export async function deleteTelltaleInboxes(): Promise<number> {
+  const mine = await ownInboxes();
+  for (const i of mine) await am().inboxes.delete(i.inboxId);
+  return mine.length;
 }
 
 async function inboxIdFor(email: string): Promise<string | null> {
