@@ -8,6 +8,7 @@ export type TelltaleEvent =
   | { type: "agent.tool"; runId: string; tool: string; input: unknown; at: string }
   | { type: "agent.done"; runId: string; summary: string; at: string }
   | { type: "agent.browser"; runId: string; liveViewUrl: string | null; at: string }
+  | { type: "agent.frame"; runId: string; data: string; url: string; at: string }
   | { type: "consent.request"; pendingId: string; at: string }
   | { type: "consent.resolved"; pendingId: string; approved: boolean; at: string }
   | { type: "disclosure.created"; disclosureId: string; at: string }

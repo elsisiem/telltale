@@ -20,6 +20,8 @@ export function Console() {
   const { state, error, refresh, refreshSoon } = useDashboard();
   const [log, setLog] = useSessionState<LogEntry[]>("telltale:agent-log", []);
   const [liveViewUrl, setLiveViewUrl] = useSessionState<string | null>("telltale:live-view", null);
+  // Latest screenshot from the agent's browser (works with Kernel and with the local fallback).
+  const [frame, setFrame] = useState<{ data: string; url: string } | null>(null);
   const [running, setRunning] = useState(false);
   const [card, setCard] = useState<{ view: CardView; readOnly: boolean } | null>(null);
   const [stageOpen, setStageOpen] = useState(false);
@@ -61,6 +63,9 @@ export function Console() {
         case "agent.browser":
           setRunning(true);
           setLiveViewUrl(e.liveViewUrl);
+          break;
+        case "agent.frame":
+          setFrame({ data: e.data, url: e.url });
           break;
         case "consent.request":
           void showPending(e.pendingId);
@@ -121,11 +126,13 @@ export function Console() {
             <AgentPanel
               log={log}
               liveViewUrl={liveViewUrl}
+              frame={frame}
               running={running}
               modelOn={!!state.integrations.model}
               onStarted={(runId, task) => {
                 setRunning(true);
                 setLiveViewUrl(null);
+                setFrame(null);
                 setLog((l) => [...l, { id: runId, at: new Date().toISOString(), kind: "run", task }]);
               }}
             />

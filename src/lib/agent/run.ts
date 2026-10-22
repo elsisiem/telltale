@@ -107,6 +107,7 @@ function isOwnDemoPage(url: string): boolean {
   const own = process.env.TELLTALE_PUBLIC_URL ? new URL(process.env.TELLTALE_PUBLIC_URL).host : null;
   return (LOCAL_URL.test(u.host) || u.host === own) && u.pathname.startsWith("/demo/");
 }
+const CRASH_RE = /crash|target (page, context or browser )?(has been )?closed|has been closed/i;
 const CONTACT_KINDS = new Set<FieldKind>(["email", "phone", "fullName", "firstName", "lastName", "street"]);
 const contactSharedOn = new Set<string>();
 
@@ -189,6 +190,21 @@ export async function runAgent(task: string, opts: { runId?: string } = {}): Pro
   const client = new Anthropic(workspace ? { defaultHeaders: { "anthropic-workspace-id": workspace } } : {});
   const session = await openBrowser({ local: LOCAL_URL.test(task) });
   emit({ type: "agent.browser", runId, liveViewUrl: session.liveViewUrl });
+  // Stream what the browser shows, whichever browser it is, so the console can always display it.
+  let lastUrl = "";
+  let framing = false;
+  const frames = setInterval(async () => {
+    if (framing || session.page.isClosed()) return;
+    framing = true;
+    try {
+      const data = (await session.page.screenshot({ type: "jpeg", quality: 50, timeout: 3000 })).toString("base64");
+      emit({ type: "agent.frame", runId, data, url: session.page.url() });
+    } catch {
+      // A frame can fail mid-navigation; the next tick tries again.
+    } finally {
+      framing = false;
+    }
+  }, 900);
   const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: "user", content: task }];
   let summary = "Stopped without finishing.";
 
@@ -224,12 +240,23 @@ export async function runAgent(task: string, opts: { runId?: string } = {}): Pro
       let finished: string | undefined;
       for (const use of uses) {
         emit({ type: "agent.tool", runId, tool: use.name, input: use.input });
+        if (use.name === "navigate") lastUrl = (use.input as { url?: string }).url ?? lastUrl;
         try {
           const r = await execute(session, runId, use.name, use.input);
           finished ??= r.finished;
           results.push({ type: "tool_result", tool_use_id: use.id, content: r.text });
+          if (!session.page.isClosed()) lastUrl = session.page.url();
         } catch (err) {
-          results.push({ type: "tool_result", tool_use_id: use.id, content: `Error: ${(err as Error).message}`, is_error: true });
+          const message = (err as Error).message;
+          if (session.page.isClosed() || CRASH_RE.test(message)) {
+            const from = session.kind;
+            await session.recover(lastUrl);
+            emit({ type: "agent.browser", runId, liveViewUrl: session.liveViewUrl });
+            emit({ type: "agent.log", runId, text: `The ${from} browser tab crashed; Telltale reopened ${lastUrl} in a fresh browser.` });
+            results.push({ type: "tool_result", tool_use_id: use.id, content: `The browser tab crashed and Telltale reopened ${lastUrl} in a fresh browser. Anything typed before the crash is gone. Call read_page and continue.`, is_error: true });
+          } else {
+            results.push({ type: "tool_result", tool_use_id: use.id, content: `Error: ${message}`, is_error: true });
+          }
         }
       }
       messages.push({ role: "user", content: results });
@@ -239,6 +266,7 @@ export async function runAgent(task: string, opts: { runId?: string } = {}): Pro
       }
     }
   } finally {
+    clearInterval(frames);
     emit({ type: "agent.done", runId, summary });
     await session.close().catch(() => {});
   }

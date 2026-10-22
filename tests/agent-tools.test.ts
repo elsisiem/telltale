@@ -28,7 +28,7 @@ beforeAll(async () => {
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
-  session = { page, liveViewUrl: null, close: async () => {} };
+  session = { page, liveViewUrl: null, kind: "local", recover: async () => {}, close: async () => {} };
 }, 60_000);
 
 afterAll(async () => {

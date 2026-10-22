@@ -145,12 +145,14 @@ function LogRow({ e }: { e: LogEntry }) {
 export function AgentPanel({
   log,
   liveViewUrl,
+  frame,
   running,
   modelOn,
   onStarted,
 }: {
   log: LogEntry[];
   liveViewUrl: string | null;
+  frame: { data: string; url: string } | null;
   running: boolean;
   modelOn: boolean;
   onStarted: (runId: string, task: string) => void;
@@ -222,15 +224,20 @@ export function AgentPanel({
         )}
       </div>
 
-      {liveViewUrl && (
+      {(frame || liveViewUrl) && (
         <div className="mt-3 overflow-hidden rounded-xl border border-line bg-black">
-          <div className="flex items-center justify-between border-b border-line px-3 py-1.5">
-            <span className="text-[12px] text-muted">Live browser</span>
-            <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-alarm">
-              <span className="size-1.5 rounded-full bg-alarm" /> Live
+          <div className="flex items-center justify-between gap-3 border-b border-line px-3 py-1.5">
+            <span className="truncate font-mono text-[12px] text-muted">{frame ? hostOf(frame.url) : "Live browser"}</span>
+            <span className="flex shrink-0 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-alarm">
+              <span className={cx("size-1.5 rounded-full bg-alarm", running && "animate-pulse")} /> {running ? "Live" : "Last view"}
             </span>
           </div>
-          <iframe src={liveViewUrl} className="aspect-[16/10] w-full" allow="autoplay; clipboard-read; clipboard-write" title="Agent browser live view" />
+          {frame ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={`data:image/jpeg;base64,${frame.data}`} alt="What the agent's browser shows" className="aspect-[1280/860] w-full object-cover object-top" />
+          ) : (
+            <iframe src={liveViewUrl!} className="aspect-[16/10] w-full" allow="autoplay; clipboard-read; clipboard-write" title="Agent browser live view" />
+          )}
         </div>
       )}
 

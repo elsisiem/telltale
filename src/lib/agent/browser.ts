@@ -1,35 +1,69 @@
 import { chromium, type Browser, type Page } from "playwright";
 
-// One browser per agent run. With KERNEL_API_KEY it is a hosted Kernel browser whose live view
-// can be embedded on stage; otherwise a local Chromium window.
+// One browser per agent run. With KERNEL_API_KEY it starts as a hosted Kernel browser; if a tab
+// crashes there (some ad-heavy pages crash Kernel's Chromium build), the session reopens the same
+// page in a bundled local Chromium and carries on. `page` always points at the live tab.
 
 export type BrowserSession = {
   page: Page;
   liveViewUrl: string | null;
+  kind: "kernel" | "local";
+  /** Reopen `url` in a local Chromium after a crash. */
+  recover(url: string): Promise<void>;
   close(): Promise<void>;
 };
 
+const VIEWPORT = { width: 1280, height: 860 };
+
+async function launchLocal() {
+  const browser = await chromium.launch({ headless: process.env.TELLTALE_HEADLESS === "1" || !!process.env.FLY_APP_NAME });
+  const page = await browser.newPage({ viewport: VIEWPORT });
+  return { browser, page };
+}
+
 /** `local` forces a local window, e.g. for this app's own demo pages, which a cloud browser can't reach. */
 export async function openBrowser(opts: { local?: boolean } = {}): Promise<BrowserSession> {
-  if (process.env.KERNEL_API_KEY && !opts.local) {
-    const { default: Kernel } = await import("@onkernel/sdk");
-    const kernel = new Kernel();
-    const kb = await kernel.browsers.create({ headless: false, stealth: true, timeout_seconds: 600 });
-    const browser: Browser = await chromium.connectOverCDP(kb.cdp_ws_url);
-    const context = browser.contexts()[0] ?? (await browser.newContext());
-    const page = context.pages()[0] ?? (await context.newPage());
-    return {
-      page,
-      liveViewUrl: kb.browser_live_view_url ?? null,
-      async close() {
+  const closers: (() => Promise<void>)[] = [];
+  const session: BrowserSession = {
+    page: undefined as unknown as Page,
+    liveViewUrl: null,
+    kind: "local",
+    async recover(url: string) {
+      const { browser, page } = await launchLocal();
+      closers.push(() => browser.close());
+      session.page = page;
+      session.kind = "local";
+      session.liveViewUrl = null;
+      if (url && url !== "about:blank") await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    },
+    async close() {
+      await Promise.all(closers.map((c) => c().catch(() => {})));
+    },
+  };
+
+  if (process.env.KERNEL_API_KEY && !opts.local && process.env.TELLTALE_BROWSER !== "local") {
+    try {
+      const { default: Kernel } = await import("@onkernel/sdk");
+      const kernel = new Kernel();
+      const kb = await kernel.browsers.create({ headless: false, stealth: true, timeout_seconds: 600 });
+      const browser: Browser = await chromium.connectOverCDP(kb.cdp_ws_url);
+      closers.push(async () => {
         await browser.close().catch(() => {});
         await kernel.browsers.deleteByID(kb.session_id).catch(() => {});
-      },
-    };
+      });
+      const context = browser.contexts()[0] ?? (await browser.newContext());
+      session.page = context.pages()[0] ?? (await context.newPage());
+      session.kind = "kernel";
+      session.liveViewUrl = kb.browser_live_view_url ?? null;
+      return session;
+    } catch (err) {
+      console.warn(`[browser] Kernel unavailable (${(err as Error).message}); using local Chromium`);
+    }
   }
-  const browser = await chromium.launch({ headless: process.env.TELLTALE_HEADLESS === "1" });
-  const page = await browser.newPage({ viewport: { width: 1280, height: 860 } });
-  return { page, liveViewUrl: null, close: () => browser.close() };
+  const { browser, page } = await launchLocal();
+  closers.push(() => browser.close());
+  session.page = page;
+  return session;
 }
 
 export type PageField = {
