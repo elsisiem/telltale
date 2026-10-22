@@ -1,26 +1,138 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Telltale "evidence locker" palette. One accent family: signal amber for tags, alarm red for
+   brokers / leaks / violations, pass green for silent passes and verified signatures. */
+@theme {
+  --color-ink: #0b0d10;
+  --color-panel: #12151a;
+  --color-panel-2: #171b21;
+  --color-line: #222831;
+  --color-line-2: #2e3641;
+  --color-fg: #e8eaed;
+  --color-muted: #8a93a0;
+  --color-dim: #5c6570;
+  --color-signal: #f5a524;
+  --color-alarm: #ff4d4f;
+  --color-pass: #3dd68c;
+  --color-paper: #f4f1ea;
+  --color-paper-ink: #1d1b17;
+  --color-paper-line: #d9d3c5;
+
+  --font-serif: "Iowan Old Style", "Charter", "Bitstream Charter", "Sitka Text", Cambria, Georgia, "Times New Roman", serif;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "Cascadia Mono", Consolas, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: var(--color-fg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-signal) 35%, transparent);
+}
+
+/* Thin, quiet scrollbars so the panels read as one surface. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2e3641 transparent;
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-alarm) 55%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+@keyframes tile-in {
+  from {
+    transform: scale(0.4);
+    opacity: 0.2;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.anim-slide-up {
+  animation: slide-up 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.anim-fade-in {
+  animation: fade-in 240ms ease-out both;
+}
+.anim-row-in {
+  animation: row-in 260ms ease-out both;
+}
+.anim-pulse {
+  animation: pulse-ring 1.6s ease-out infinite;
+}
+.anim-tile-in {
+  animation: tile-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-slide-up,
+  .anim-fade-in,
+  .anim-row-in,
+  .anim-pulse,
+  .anim-tile-in {
+    animation: none;
+  }
+}
+
+/* The "exhibit" paper used for legal documents. */
+.paper {
+  background: var(--color-paper);
+  color: var(--color-paper-ink);
+  font-family: var(--font-serif);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 24px 60px -20px rgba(0, 0, 0, 0.7),
+    0 2px 6px rgba(0, 0, 0, 0.4);
 }
