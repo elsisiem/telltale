@@ -7,7 +7,7 @@ import { runScan } from "@/lib/daylight/scan";
 import { daylightFindings } from "@/lib/daylight/findings";
 import { bus, type TelltaleEvent } from "@/lib/events";
 import { db } from "@/lib/db";
-import { emptyFlags, type Broker, type RequestStats } from "@/lib/registry";
+import { emptyFlags, loadRegistry, type Broker, type RequestStats } from "@/lib/registry";
 
 describe("robots.txt (Google semantics)", () => {
   const txt = [
@@ -188,5 +188,19 @@ describe("runScan + findings", () => {
     const own = brokers.map((b) => (b.id === "sneaky" ? { ...b, website: base } : b));
     const ownFindings = await daylightFindings({ host: "sneaky.test", domain: "sneaky.test", matchedBy: "registry-domain", brokers: own });
     expect(ownFindings[0].severity).toBe(own[0].rightsUrls.some((u) => /opt|rights|choices/.test(u)) ? "high" : "medium");
+  });
+});
+
+describe("conclusive observations", () => {
+  it("keeps a hidden finding when a later sweep was only blocked", async () => {
+    const d = await db();
+    const broker = loadRegistry().find((b) => b.name.startsWith("Spokeo"))!;
+    const url = "https://www.spokeo.com/privacy/control/all-categories";
+    await d.query("insert into scans (id, started_at, finished_at) values ('s-old', now() - interval '2 hours', now() - interval '2 hours'), ('s-new', now(), now())");
+    await d.query("insert into scan_results (scan_id, broker_id, url, status, signals) values ($1, $2, $3, 'hidden', $4), ($5, $2, $3, 'blocked', '[]')", [
+      "s-old", broker.id, url, JSON.stringify([{ type: "x-robots-tag", detail: "X-Robots-Tag: noindex" }]), "s-new",
+    ]);
+    const f = await daylightFindings({ host: "www.spokeo.com", domain: "spokeo.com", matchedBy: "registry-domain", brokers: [broker] });
+    expect(f[0]?.text).toMatch(/^hides its own opt-out page from search engines \(observed .*X-Robots-Tag: noindex\)$/);
   });
 });
