@@ -156,7 +156,7 @@ export async function execute(session: BrowserSession, runId: string, name: stri
       const loc = page.locator(selector).first();
       const host = new URL(page.url()).host;
       // The fictional demo pages served by this app are not real businesses, so submitting is fine.
-      if (dryRun() && !LOCAL_URL.test(host) && contactSharedOn.has(host)) {
+      if (dryRun() && !isOwnDemoPage(page.url()) && contactSharedOn.has(host)) {
         const label = ((await loc.textContent().catch(() => "")) ?? "") + " " + ((await loc.getAttribute("value").catch(() => "")) ?? "");
         if (SUBMIT_RE.test(label)) {
           return { text: "Dry run: Telltale stopped here so the demo persona's contact details are not submitted to a real company. Call finish and tell the person the form is filled and ready to submit." };

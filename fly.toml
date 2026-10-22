@@ -9,6 +9,7 @@ primary_region = "ord"
 [env]
   PORT = "3000"
   TELLTALE_MODEL = "claude-sonnet-5-5"
+  TELLTALE_PUBLIC_URL = "https://telltale-app.fly.dev"
 
 [http_service]
   internal_port = 3000
