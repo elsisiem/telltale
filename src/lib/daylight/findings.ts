@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { db } from "../db";
-import { registrableDomain } from "../domains";
+import { emailDomain, registrableDomain, splitUrls } from "../domains";
 import { setExtraFindings } from "../gate";
 import type { Recipient } from "../resolver";
 import type { Finding } from "../risk";
@@ -72,7 +72,19 @@ function fromSnapshot(ids: string[]): { observed: string; hidden: Hidden[] } | n
 
 const OPT_OUT_PATH = /opt-?out|choices|do-?not-?sell|donotsell|rights|control|privacy-form|delete|request|preferences/i;
 
-function classify(url: string, brokerDomains: string[]): "own-optout" | "own-policy" | "vendor-portal" {
+/** The broker's own domains: its website and contact email, not wherever its rights page happens to be hosted. */
+export function ownDomains(b: { website: string; contactEmail: string }): string[] {
+  const out = new Set<string>();
+  for (const u of splitUrls(b.website)) {
+    const d = registrableDomain(u);
+    if (d) out.add(d);
+  }
+  const e = emailDomain(b.contactEmail);
+  if (e) out.add(e);
+  return [...out];
+}
+
+export function classify(url: string, brokerDomains: string[]): "own-optout" | "own-policy" | "vendor-portal" {
   const domain = registrableDomain(url);
   if (!domain || !brokerDomains.includes(domain)) return "vendor-portal";
   return OPT_OUT_PATH.test(new URL(/^https?:/i.test(url) ? url : `https://${url}`).pathname) ? "own-optout" : "own-policy";
@@ -98,7 +110,7 @@ export async function daylightFindings(recipient: Recipient): Promise<Finding[]>
       .filter((h) => h.brokerId === b.id)
       .map((h) => ({ ...h, evidence: h.signals.find((s) => HIDING_SIGNALS.includes(s.type)) }))
       .filter((h) => h.evidence)
-      .map((h) => ({ ...h, kind: classify(h.url, b.domains) }));
+      .map((h) => ({ ...h, kind: classify(h.url, ownDomains(b)) }));
     // Report the most damning page: the broker's own opt-out page, then its policy, then a vendor portal.
     const hit = (["own-optout", "own-policy", "vendor-portal"] as const).map((k) => hits.find((h) => h.kind === k)).find(Boolean);
     if (!hit?.evidence) continue;

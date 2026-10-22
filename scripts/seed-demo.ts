@@ -1,6 +1,6 @@
 // Seeds the local PGlite database with the stage story so the console has something to show:
 //   1. a silent pass to an ordinary dental office (email tagged automatically)
-//   2. a consent-gated disclosure to a registered broker (RocketReach), resolved in-process
+//   2. a consent-gated disclosure to a registered broker (Best Auto Insurance, run by Apollo Interactive), resolved in-process
 //   3. an opt-out of sale/sharing to that broker
 //   4. expected first-party mail, then a SIMULATED "Day 47" contact from a fictional sender
 //
@@ -45,10 +45,10 @@ async function main() {
     { selector: "#company", kind: "other", label: "Company" },
     { selector: "#zip", kind: "zip", label: "ZIP" },
   ];
-  const pendingResult = requestDisclosure({ url: "https://rocketreach.co/signup", purpose: "Free contact lookup", fields: brokerForm });
+  const pendingResult = requestDisclosure({ url: "https://www.bestautoinsurance.com/quote", purpose: "Car insurance quotes", fields: brokerForm });
   await new Promise((r) => setTimeout(r, 300));
-  const card = listPending().find((p) => p.status === "pending" && p.recipient.host === "rocketreach.co");
-  if (!card) throw new Error("expected a pending consent card for rocketreach.co");
+  const card = listPending().find((p) => p.status === "pending" && p.recipient.host === "www.bestautoinsurance.com");
+  if (!card) throw new Error("expected a pending consent card for bestautoinsurance.com");
   console.log("consent card:", card.recipient.brokers.map((b) => b.name).join(", "), `${card.risk.findings.length} findings`);
   resolveConsent(card.id, { approved: true, actions: { "#name": "tag", "#email": "tag", "#phone": "withhold", "#company": "withhold" } });
   const broker = await pendingResult;
@@ -63,8 +63,8 @@ async function main() {
 
   const alias = broker.values["#email"];
   const fp = await ingestObservation({
-    channel: "email", to: alias, from: "RocketReach <hello@rocketreach.co>", fromDomain: "rocketreach.co",
-    subject: "Welcome to RocketReach", receivedAt: new Date(created.getTime() + 2 * 60_000).toISOString(),
+    channel: "email", to: alias, from: "Best Auto Insurance <quotes@bestautoinsurance.com>", fromDomain: "bestautoinsurance.com",
+    subject: "Your quotes are ready", receivedAt: new Date(created.getTime() + 2 * 60_000).toISOString(),
   });
   console.log("first-party:", fp.classification);
 

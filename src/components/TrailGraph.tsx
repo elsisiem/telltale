@@ -115,7 +115,7 @@ export function TrailGraph({ state }: { state: UiState }) {
             <g clipPath={`url(#${clipId})`}>
               <path d={`M${X_RECIP + 28},${y} L${X_THIRD - 32},${y}`} fill="none" stroke={C.alarm} strokeWidth={2.5} strokeDasharray="8 6" markerEnd="url(#arrow-red)" />
               <text x={(X_RECIP + X_THIRD) / 2} y={y - 12} textAnchor="middle" fontSize="13" fill={C.alarm} style={MONO}>
-                {l.evidence.tagCode} reused
+                {l.evidence.tagCode} surfaced
               </text>
             </g>
             <g className="anim-fade-in" style={{ animationDelay: "1.1s" }}>

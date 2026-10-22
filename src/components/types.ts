@@ -80,7 +80,8 @@ export type ReceiptResponse = { verified: boolean; receipt: Record<string, unkno
 // Daylight (broker opt-out page sweep). Coded against the planned /api/daylight contract.
 export type DaylightStatus = "visible" | "hidden" | "blocked" | "unreachable";
 export type DaylightSignal = { type: string; detail: string };
-export type DaylightResult = { brokerId: string; name: string; url: string; status: DaylightStatus; signals: DaylightSignal[] };
+export type HiddenKind = "own-optout" | "own-policy" | "vendor-portal";
+export type DaylightResult = { brokerId: string; name: string; url: string; status: DaylightStatus; signals: DaylightSignal[]; kind?: HiddenKind | null };
 export type DaylightScan = {
   id: string;
   startedAt: string;

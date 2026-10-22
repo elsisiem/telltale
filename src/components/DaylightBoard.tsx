@@ -196,7 +196,14 @@ export function DaylightBoard() {
   }, [tiles]);
   const checked = counts.visible + counts.hidden + counts.blocked + counts.unreachable;
   const selTile = selected ? tiles.find((t) => t.brokerId === selected) : undefined;
-  const hiddenList = tiles.filter((t) => t.status === "hidden");
+  const kindById = useMemo(() => new Map(results.map((r) => [r.brokerId, r.kind ?? null])), [results]);
+  const KIND_ORDER = { "own-optout": 0, "own-policy": 1, "vendor-portal": 2 } as const;
+  const KIND_LABEL = { "own-optout": "own opt-out page", "own-policy": "privacy page", "vendor-portal": "vendor portal" } as const;
+  const hiddenList = tiles
+    .filter((t) => t.status === "hidden")
+    .map((t) => ({ ...t, kind: kindById.get(t.brokerId) ?? null }))
+    .sort((a, b) => (a.kind ? KIND_ORDER[a.kind] : 3) - (b.kind ? KIND_ORDER[b.kind] : 3) || a.name.localeCompare(b.name));
+  const ownOptOut = hiddenList.filter((t) => t.kind === "own-optout").length;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -302,14 +309,16 @@ export function DaylightBoard() {
                 ))}
               </ul>
               <div className="mt-6 min-h-0 flex-1 overflow-y-auto border-t border-line pt-4">
-                <h3 className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted">Hiding their opt-out page</h3>
+                <h3 className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted">Hidden from search engines</h3>
+                {ownOptOut > 0 && <p className="mt-1 text-[13px] text-dim"><span className="text-alarm">{ownOptOut}</span> hide their own opt-out page; the rest a privacy page or a vendor portal.</p>}
                 {hiddenList.length ? (
                   <ul className="mt-2 flex flex-col">
                     {hiddenList.map((t) => (
                       <li key={t.brokerId}>
                         <button onClick={() => setSelected(t.brokerId)} className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-[14px] text-fg hover:bg-white/[0.04]">
-                          <span className="size-2 rounded-[2px] bg-alarm" />
+                          <span className={`size-2 shrink-0 rounded-[2px] ${t.kind === "own-optout" ? "bg-alarm" : "bg-alarm/50"}`} />
                           <span className="truncate">{t.name}</span>
+                          {t.kind && <span className="ml-auto shrink-0 font-mono text-[11px] text-dim">{KIND_LABEL[t.kind]}</span>}
                         </button>
                       </li>
                     ))}

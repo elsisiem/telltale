@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, cx, fmtTime, hostOf } from "./format";
 import { Button, SectionLabel } from "./ui";
 
 // Stage presets. Edit freely: `label` is the chip text, `task` is what the agent receives.
 export const PRESETS: { label: string; task: string }[] = [
-  { label: "Book a dental cleaning", task: "Book a dental cleaning at https://www.bayviewdental.example/book using my details" },
-  { label: "Free people-search account", task: "Create a free account at https://rocketreach.co/signup so I can look someone up" },
+  // {origin} becomes this app's address: the dental office is a fictional demo page served by Telltale.
+  { label: "Book a dental cleaning", task: "Book a dental cleaning at {origin}/demo/dental using my details" },
+  { label: "Get car insurance quotes", task: "Get me car insurance quotes at https://www.bestautoinsurance.com for my 2019 Honda Civic. Use my details where the form asks." },
+  { label: "People-search account", task: "Create a free account at https://www.spokeo.com so I can check what it shows about me" },
 ];
 
 export type LogEntry =
@@ -153,7 +155,9 @@ export function AgentPanel({
   modelOn: boolean;
   onStarted: (runId: string, task: string) => void;
 }) {
+  const withOrigin = (t: string) => (typeof window === "undefined" ? t : t.replaceAll("{origin}", window.location.origin));
   const [task, setTask] = useState(PRESETS[0].task);
+  useEffect(() => setTask((t) => withOrigin(t)), []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -161,7 +165,7 @@ export function AgentPanel({
     setBusy(true);
     setError(null);
     try {
-      const { runId } = await api<{ runId: string }>("/api/agent/run", { json: { task } });
+      const { runId } = await api<{ runId: string }>("/api/agent/run", { json: { task: withOrigin(task) } });
       onStarted(runId, task);
     } catch (err) {
       setError((err as Error).message);
@@ -195,7 +199,7 @@ export function AgentPanel({
           {PRESETS.map((p) => (
             <button
               key={p.label}
-              onClick={() => setTask(p.task)}
+              onClick={() => setTask(withOrigin(p.task))}
               className={cx(
                 "rounded-full border px-2.5 py-1 text-[12px] transition-colors",
                 task === p.task ? "border-signal/50 bg-signal/10 text-signal" : "border-line text-muted hover:border-line-2 hover:text-fg",

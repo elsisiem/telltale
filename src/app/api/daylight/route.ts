@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import type { Signal } from "@/lib/daylight/check";
-import { readSnapshot } from "@/lib/daylight/findings";
+import { classify, ownDomains, readSnapshot } from "@/lib/daylight/findings";
 import type { ScanSummary } from "@/lib/daylight/scan";
 import { loadRegistry } from "@/lib/registry";
 
@@ -13,7 +13,11 @@ const RANK: Record<Status, number> = { hidden: 3, blocked: 2, unreachable: 1, vi
 
 /** Latest finished sweep (database first, then the committed snapshot), one row per broker. */
 export async function GET() {
-  const names = Object.fromEntries(loadRegistry().map((b) => [b.id, b.name]));
+  const registry = loadRegistry();
+  const names = Object.fromEntries(registry.map((b) => [b.id, b.name]));
+  const domains = Object.fromEntries(registry.map((b) => [b.id, ownDomains(b)]));
+  // How damning a hidden page is: the broker's own opt-out page, its policy page, or a vendor portal.
+  const kindOf = (brokerId: string, url: string, status: Status) => (status === "hidden" ? classify(url, domains[brokerId] ?? []) : null);
   const d = await db();
   const { rows } = await d.query<{ id: string; started_at: string; finished_at: string; summary: ScanSummary }>(
     "select * from scans where finished_at is not null order by finished_at desc limit 1",
@@ -34,7 +38,7 @@ export async function GET() {
     return NextResponse.json({
       source: "database",
       scan: { id: scan.id, startedAt: scan.started_at, finishedAt: scan.finished_at, summary: { ...scan.summary, total: scan.summary.totalBrokers } },
-      results: [...byBroker.values()],
+      results: [...byBroker.values()].map((r) => ({ ...r, kind: kindOf(r.brokerId, r.url, r.status) })),
     });
   }
 
@@ -42,7 +46,8 @@ export async function GET() {
   if (!snap) return NextResponse.json({ source: "none", scan: null, results: [] });
   const results = snap.brokers.map((b) => {
     const worst = [...b.urls].sort((x, y) => RANK[y.status] - RANK[x.status])[0];
-    return { brokerId: b.id, name: b.name, url: worst?.url ?? "", status: b.status, signals: worst?.signals ?? [] };
+    const url = worst?.url ?? "";
+    return { brokerId: b.id, name: b.name, url, status: b.status, signals: worst?.signals ?? [], kind: kindOf(b.id, url, b.status) };
   });
   return NextResponse.json({
     source: "snapshot",

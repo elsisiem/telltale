@@ -185,7 +185,7 @@ describe("runScan + findings", () => {
     expect(findings[0].text).toMatch(/^routes consumer requests to a third-party portal that blocks search engines \(observed \d{4}-\d{2}-\d{2}: <meta content="noindex/);
 
     // Served from the broker's own domain at an opt-out path, the same evidence is high severity.
-    const own = brokers.map((b) => (b.id === "sneaky" ? { ...b, domains: ["127.0.0.1"] } : b));
+    const own = brokers.map((b) => (b.id === "sneaky" ? { ...b, website: base } : b));
     const ownFindings = await daylightFindings({ host: "sneaky.test", domain: "sneaky.test", matchedBy: "registry-domain", brokers: own });
     expect(ownFindings[0].severity).toBe(own[0].rightsUrls.some((u) => /opt|rights|choices/.test(u)) ? "high" : "medium");
   });

@@ -15,6 +15,8 @@ export const SHARED_VENDOR_DOMAINS = new Set([
   "datagrail.io", "mineos.ai", "truyo.com", "wirewheel.io", "didomi.io", "formstack.com",
   "smartsheet.com", "surveymonkey.com", "github.io", "squarespace.com", "wixsite.com",
   "my.site.com", "freshdesk.com", "zohopublic.com", "airtable.com", "cognitoforms.com",
+  "service-now.com", "servicenow.com", "intercom.help", "intercom.io", "usepylon.com", "dporganizer.com",
+  "saymine.io", "saymine.com", "hightouch.com", "trustarc.eu", "privacycenter.com", "webflow.io",
 ]);
 
 export const FREE_EMAIL_DOMAINS = new Set([
