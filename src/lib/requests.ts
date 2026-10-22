@@ -134,6 +134,12 @@ export async function draftComplaint(leakId: string): Promise<{ id: string; titl
     draft.title = `SIMULATION · ${draft.title}`;
     draft.body = `SIMULATION. The contact below was replayed for demonstration from a fictional sender; it is not a real event and must not be filed.\n\n${draft.body}`;
   }
+  // One draft per leak: re-opening the evidence page returns the same complaint.
+  const { rows: existing } = await d.query<{ id: string }>("select id from complaints where leak_id = $1 order by created_at limit 1", [leakId]);
+  if (existing[0]) {
+    await d.query("update complaints set body = $2 where id = $1", [existing[0].id, draft.body]);
+    return { id: existing[0].id, ...draft };
+  }
   const id = crypto.randomUUID();
   await d.query("insert into complaints (id, leak_id, request_id, body) values ($1,$2,$3,$4)", [id, leakId, reqId ?? null, draft.body]);
   return { id, ...draft };

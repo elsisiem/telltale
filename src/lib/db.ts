@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { DATA_DIR } from "./vault";
 
@@ -94,6 +95,7 @@ async function open(): Promise<Db> {
   }
   const { PGlite } = await import("@electric-sql/pglite");
   const dir = process.env.TELLTALE_DB_DIR ?? path.join(DATA_DIR, "db");
+  if (dir !== "memory://") fs.mkdirSync(path.dirname(dir), { recursive: true });
   const lite = dir === "memory://" ? new PGlite() : new PGlite(dir);
   await lite.exec(SCHEMA);
   return { query: (sql, params) => lite.query(sql, params) as never };
