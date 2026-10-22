@@ -4,7 +4,7 @@ import { z } from "zod";
 import { emit } from "../events";
 import { requestDisclosure } from "../gate";
 import type { FieldKind } from "../policy";
-import { loadProfile } from "../vault";
+import { isDryRun, loadProfile } from "../profile-store";
 import { openBrowser, snapshot, type BrowserSession } from "./browser";
 
 // The personal agent. It browses and fills forms for the person, but it never holds their
@@ -97,7 +97,7 @@ const tools: Anthropic.Beta.BetaTool[] = [
 ];
 
 // With the synthetic stage persona, never submit contact details to a real business.
-const dryRun = () => process.env.TELLTALE_DRY_RUN === "1" || (process.env.TELLTALE_DRY_RUN !== "0" && loadProfile().synthetic === true);
+// Fill but do not submit: always for the synthetic persona, and when the person asks for it.
 const SUBMIT_RE = /submit|get (my )?(free )?quotes?|see (my )?(rates|quotes)|sign ?up|create|register|send|request|finish|complete|view (my )?(rates|results)|continue|next/i;
 const LOCAL_URL = /\b(localhost|127\.0\.0\.1)(:\d+)?\b/;
 
@@ -111,8 +111,8 @@ const CRASH_RE = /crash|target (page, context or browser )?(has been )?closed|ha
 const CONTACT_KINDS = new Set<FieldKind>(["email", "phone", "fullName", "firstName", "lastName", "street"]);
 const contactSharedOn = new Set<string>();
 
-function looksPersonal(v: string): boolean {
-  const p = loadProfile();
+async function looksPersonal(v: string): Promise<boolean> {
+  const p = await loadProfile();
   const real = [p.email, p.phone, p.firstName, p.lastName, p.street, p.dob].filter((x) => x && x.length > 2).map((x) => x.toLowerCase());
   const s = v.toLowerCase();
   return /@/.test(v) || /\d{3}\D?\d{3}\D?\d{4}/.test(v) || real.some((x) => s.includes(x));
@@ -156,7 +156,7 @@ export async function execute(session: BrowserSession, runId: string, name: stri
     }
     case "set_field": {
       const { selector, value } = z.object({ selector: z.string(), value: z.string() }).parse(input);
-      if (looksPersonal(value)) return { text: "Refused: that looks like personal information. Use fill_form so Telltale can decide." };
+      if (await looksPersonal(value)) return { text: "Refused: that looks like personal information. Use fill_form so Telltale can decide." };
       const el = page.locator(selector).first();
       const tagName = await el.evaluate((e) => e.tagName.toLowerCase());
       if (tagName === "select") await el.selectOption({ label: value }).catch(() => el.selectOption(value));
@@ -168,7 +168,7 @@ export async function execute(session: BrowserSession, runId: string, name: stri
       const loc = page.locator(selector).first();
       const host = new URL(page.url()).host;
       // The fictional demo pages served by this app are not real businesses, so submitting is fine.
-      if (dryRun() && !isOwnDemoPage(page.url()) && contactSharedOn.has(host)) {
+      if ((await isDryRun()) && !isOwnDemoPage(page.url()) && contactSharedOn.has(host)) {
         const label = ((await loc.textContent().catch(() => "")) ?? "") + " " + ((await loc.getAttribute("value").catch(() => "")) ?? "");
         if (SUBMIT_RE.test(label)) {
           return { text: "Dry run: Telltale stopped here so the demo persona's contact details are not submitted to a real company. Call finish and tell the person the form is filled and ready to submit." };

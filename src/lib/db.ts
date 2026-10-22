@@ -66,6 +66,11 @@ create table if not exists complaints (
   body text not null,
   status text not null default 'draft'
 );
+create table if not exists vault (
+  key text primary key,
+  value text not null,
+  updated_at timestamptz not null default now()
+);
 create table if not exists browser_memo (
   host text primary key,
   reason text not null,

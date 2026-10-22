@@ -4,7 +4,8 @@ import { addDays, complaintDraft, deletionRequestLetter, DELETE_DAYS, optOutLett
 import { loadRegistry, type Broker } from "./registry";
 import { assessRisk } from "./risk";
 import { resolveRecipient } from "./resolver";
-import { loadProfile, taggedValue } from "./vault";
+import { loadProfile } from "./profile-store";
+import { taggedValue, type Profile } from "./vault";
 
 type DisclosureRow = {
   id: string; created_at: string; recipient_domain: string; broker_ids: string[]; tag_code: string;
@@ -20,8 +21,8 @@ function brokerById(id: string | undefined): Broker | undefined {
   return id ? loadRegistry().find((b) => b.id === id) : undefined;
 }
 
-function idsFor(d: DisclosureRow) {
-  const p = loadProfile();
+function idsFor(d: DisclosureRow, p: Profile) {
+
   const tagged = (k: string) => d.fields.some((f) => f.kind === k && f.action === "tag");
   return {
     tagCode: d.tag_code,
@@ -42,7 +43,7 @@ export function setSender(s: Sender | null) {
 async function deliver(to: string, subject: string, body: string, fromAlias: string | null): Promise<string> {
   if (sender) return sender(to, subject, body, fromAlias);
   // Never send legal requests to a real company on behalf of the synthetic stage persona.
-  if (loadProfile().synthetic) return "manual";
+  if ((await loadProfile()).synthetic) return "manual";
   if (process.env.AGENTMAIL_API_KEY) {
     const { agentMailSend } = await import("./integrations/agentmail");
     return agentMailSend(to, subject, body, fromAlias);
@@ -59,7 +60,8 @@ export async function sendOptOut(disclosureId: string, opts: { sentAt?: Date } =
   const broker = brokerById(disc.broker_ids[0]);
   if (!broker) throw new Error(`${disc.recipient_domain} is not a registered broker; nothing to opt out of`);
   const sentAt = opts.sentAt ?? new Date();
-  const letter = optOutLetter({ broker, profile: loadProfile(), ids: idsFor(disc), sentAt });
+  const profile = await loadProfile();
+  const letter = optOutLetter({ broker, profile, ids: idsFor(disc, profile), sentAt });
   const channel = await deliver(broker.contactEmail, letter.subject, letter.body, disc.alias_email);
   const row: RequestRow = {
     id: crypto.randomUUID(), created_at: new Date().toISOString(), kind: "optout",
@@ -83,7 +85,8 @@ export async function sendDeletion(leakId: string, opts: { sentAt?: Date } = {})
   const broker = brokerById(leak.sender_broker_ids[0]);
   const target = broker ?? { name: leak.sender_domain, contactEmail: `privacy@${leak.sender_domain}` };
   const sentAt = opts.sentAt ?? new Date();
-  const letter = deletionRequestLetter({ broker: target, profile: loadProfile(), ids: idsFor(ds[0]), sentAt });
+  const profile = await loadProfile();
+  const letter = deletionRequestLetter({ broker: target, profile, ids: idsFor(ds[0], profile), sentAt });
   const channel = await deliver(target.contactEmail, letter.subject, letter.body, ds[0].alias_email);
   const row: RequestRow = {
     id: crypto.randomUUID(), created_at: new Date().toISOString(), kind: "delete",
@@ -120,7 +123,7 @@ export async function draftComplaint(leakId: string): Promise<{ id: string; titl
   const sender = resolveRecipient(leak.sender_domain);
   const senderRisk = assessRisk(sender);
   const draft = complaintDraft({
-    profile: loadProfile(),
+    profile: await loadProfile(),
     tagCode: disc.tag_code,
     identifierObserved: leak.evidence.observed.to,
     issuedTo: { domain: disc.recipient_domain, at: new Date(disc.created_at).toISOString(), receiptId: disc.receipt?.receiptId ?? "n/a" },

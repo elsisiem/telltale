@@ -7,7 +7,8 @@ import { buildReceipt, type ConsentReceipt } from "./receipts";
 import { loadRegistry, type Broker } from "./registry";
 import { resolveRecipient, type Recipient } from "./resolver";
 import { assessRisk, type Finding, type RiskProfile } from "./risk";
-import { loadProfile, mintTagCode, valueFor } from "./vault";
+import { loadProfile } from "./profile-store";
+import { mintTagCode, valueFor } from "./vault";
 
 // The consent gate. The agent describes the form it is about to fill using field kinds, never
 // values. The gate identifies the recipient, decides per field, asks the person when the
@@ -174,7 +175,7 @@ async function uniqueTagCode(): Promise<string> {
 }
 
 async function finalize(view: PendingView, prompted: boolean, prior: PriorDisclosure | null = null): Promise<GateResult> {
-  const profile = loadProfile();
+  const profile = await loadProfile();
   const tagCode = prior?.tag_code ?? (await uniqueTagCode());
   const needsAlias = view.decision.fields.some((f) => f.kind === "email" && f.action === "tag");
   const aliasEmail = prior?.alias_email

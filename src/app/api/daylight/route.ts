@@ -4,6 +4,7 @@ import type { Signal } from "@/lib/daylight/check";
 import { classify, ownDomains, readSnapshot } from "@/lib/daylight/findings";
 import type { ScanSummary } from "@/lib/daylight/scan";
 import { loadRegistry } from "@/lib/registry";
+import { sweepProgress } from "@/lib/daylight/status";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ type Status = "visible" | "hidden" | "blocked" | "unreachable";
 const RANK: Record<Status, number> = { hidden: 3, blocked: 2, unreachable: 1, visible: 0 };
 
 /** Latest finished sweep (database first, then the committed snapshot), one row per broker. */
-export async function GET() {
+async function latest() {
   const registry = loadRegistry();
   const names = Object.fromEntries(registry.map((b) => [b.id, b.name]));
   const domains = Object.fromEntries(registry.map((b) => [b.id, ownDomains(b)]));
@@ -64,7 +65,7 @@ export async function GET() {
     const merged = [...byBroker.values()].map((r) => ({ ...r, kind: kindOf(r.brokerId, r.url, r.status) }));
     const counts = { visible: 0, hidden: 0, blocked: 0, unreachable: 0 } as Record<Status, number>;
     for (const r of merged) counts[r.status]++;
-    return NextResponse.json({
+    return ({
       source: "database",
       scan: { id: scan.id, startedAt: scan.started_at, finishedAt: scan.finished_at, summary: { ...scan.summary, total: scan.summary.totalBrokers, counts, carriedOver: merged.filter((r) => r.carried).length } },
       results: merged,
@@ -72,13 +73,13 @@ export async function GET() {
   }
 
   const snap = readSnapshot();
-  if (!snap) return NextResponse.json({ source: "none", scan: null, results: [] });
+  if (!snap) return ({ source: "none", scan: null, results: [] });
   const results = snap.brokers.map((b) => {
     const worst = [...b.urls].sort((x, y) => RANK[y.status] - RANK[x.status])[0];
     const url = worst?.url ?? "";
     return { brokerId: b.id, name: b.name, url, status: b.status, signals: worst?.signals ?? [], kind: kindOf(b.id, url, b.status) };
   });
-  return NextResponse.json({
+  return ({
     source: "snapshot",
     scan: {
       id: snap.scanId,
@@ -88,4 +89,9 @@ export async function GET() {
     },
     results,
   });
+}
+
+/** Latest finished sweep plus, while one is running, its progress so far. */
+export async function GET() {
+  return NextResponse.json({ ...(await latest()), running: await sweepProgress(true) });
 }

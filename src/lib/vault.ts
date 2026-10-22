@@ -1,10 +1,9 @@
-import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import type { Action, FieldKind } from "./policy";
 
-// The person's real details. They live only on this machine (.telltale/profile.json) and are
-// never put into the model's context: the agent works with {{placeholders}} instead.
+// The person's real details. Stored encrypted by profile-store.ts and never put into the model's
+// context: the agent describes fields by kind and the gate types the values.
 export type Profile = {
   firstName: string;
   middleName?: string;
@@ -35,12 +34,6 @@ export const DEMO_PROFILE: Profile = {
   dob: "1996-04-12",
   synthetic: true,
 };
-
-export function loadProfile(): Profile {
-  const file = path.join(DATA_DIR, "profile.json");
-  if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, "utf8")) as Profile;
-  return DEMO_PROFILE;
-}
 
 // Crockford-style alphabet without look-alikes (0/O, 1/I/L) so codes survive being read aloud
 // or retyped by a broker's data-entry pipeline.

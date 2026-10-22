@@ -1,7 +1,8 @@
 import { db } from "./db";
 import { listPending } from "./gate";
 import { loadRegistry, REGISTRY_SOURCE } from "./registry";
-import { loadProfile } from "./vault";
+import { isDryRun, loadProfile } from "./profile-store";
+import { sweepProgress } from "./daylight/status";
 
 // Everything the console renders, in one read. Real values from the vault are never included:
 // the UI shows tags, outcomes and the person's first name only.
@@ -17,16 +18,17 @@ export async function dashboardState() {
   ]);
   const registry = loadRegistry();
   const names = Object.fromEntries(registry.map((b) => [b.id, b.name]));
-  const profile = loadProfile();
+  const [profile, dryRun, sweep] = await Promise.all([loadProfile(), isDryRun(), sweepProgress()]);
   return {
-    person: { firstName: profile.firstName, synthetic: !!profile.synthetic },
+    person: { firstName: profile.firstName, synthetic: !!profile.synthetic, dryRun },
+    sweep,
     registry: { brokers: registry.length, source: REGISTRY_SOURCE },
     integrations: {
       model: process.env.ANTHROPIC_API_KEY ? (process.env.TELLTALE_MODEL ?? "claude-sonnet-5-5") : null,
       agentmail: !!process.env.AGENTMAIL_API_KEY,
       kernel: !!process.env.KERNEL_API_KEY,
       exa: !!process.env.EXA_API_KEY,
-      database: process.env.DATABASE_URL ? "neon" : "pglite",
+      database: process.env.DATABASE_URL?.trim() ? "neon" : "pglite",
     },
     brokerNames: names,
     pending: listPending().filter((p) => p.status === "pending"),
