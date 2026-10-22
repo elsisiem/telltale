@@ -15,9 +15,48 @@ const FORM: FormField[] = [
   { selector: "#zip", kind: "zip", label: "ZIP" },
 ];
 
+async function nextCard(runId?: string) {
+  for (let i = 0; i < 200; i++) {
+    const c = listPending().find((p) => p.status === "pending" && (!runId || p.request.runId === runId));
+    if (c) return c;
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  throw new Error("no consent card appeared");
+}
+
 beforeAll(() => {
   _setAliasProvider({ name: "test", create: async (code) => `maya.${code.toLowerCase()}@agentmail.to` });
   setSender(async () => "test");
+});
+
+describe("multi-step forms", () => {
+  it("keeps one tag per site per run and only re-asks for new kinds of data", async () => {
+    const url = "https://www.bestautoinsurance.com/quote";
+    const step1 = requestDisclosure({ url, purpose: "Car insurance quotes", runId: "run-ms", fields: [{ selector: "#zip", kind: "zip", label: "ZIP" }] });
+    const card1 = await nextCard("run-ms");
+    expect(card1.recipient.brokers[0].name).toMatch(/Apollo Interactive/);
+    expect(card1.risk.findings.find((f) => f.key === "delete-denials")?.text).toMatch(/13,539 of 15,040/);
+    resolveConsent(card1.id, { approved: true });
+    const r1 = await step1;
+
+    // same kind again on the next page: no prompt, same tag
+    const r2 = await requestDisclosure({ url, purpose: "Car insurance quotes", runId: "run-ms", fields: [{ selector: "#zip2", kind: "zip", label: "ZIP" }] });
+    expect(r2.status === "approved" && r2.prompted).toBe(false);
+
+    // new kinds (contact details) on the final page: asks again, still the same tag
+    const step3 = requestDisclosure({ url, purpose: "Car insurance quotes", runId: "run-ms", fields: [
+      { selector: "#email", kind: "email", label: "Email" }, { selector: "#phone", kind: "phone", label: "Phone" },
+    ] });
+    const card3 = await nextCard("run-ms");
+    resolveConsent(card3.id, { approved: true });
+    const r3 = await step3;
+    if (r1.status !== "approved" || r2.status !== "approved" || r3.status !== "approved") throw new Error("not approved");
+    expect(r3.prompted).toBe(true);
+    expect(new Set([r1.tagCode, r2.tagCode, r3.tagCode]).size).toBe(1);
+    expect(r3.disclosureId).toBe(r1.disclosureId);
+    expect(r3.values["#phone"]).toBe("");
+    expect(r3.receipt.piiCategories.map((c) => c.kind).sort()).toEqual(["email", "phone", "zip"]);
+  });
 });
 
 describe("end-to-end: disclose → opt out → leak → complaint", () => {
@@ -38,8 +77,7 @@ describe("end-to-end: disclose → opt out → leak → complaint", () => {
     bus.on("event", onEvent);
 
     const pendingResult = requestDisclosure({ url: "https://rocketreach.co/signup", purpose: "Free contact lookup", fields: FORM });
-    await new Promise((r) => setTimeout(r, 50));
-    const card = listPending()[0];
+    const card = await nextCard();
     expect(card.recipient.brokers[0].name).toBe("RocketReach LLC");
     expect(card.risk.findings.some((f) => f.key === "soldToGenAIDeveloper")).toBe(true);
     // The person also withholds the name entirely

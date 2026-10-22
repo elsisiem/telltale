@@ -97,9 +97,22 @@ export async function requestDisclosure(req: DisclosureRequest, opts: { timeoutM
     ...(await preview(req)),
   };
 
+  // Multi-step forms: later steps on the same site in the same run keep the first step's tag and
+  // decisions, and only ask again if a new kind of personal data appears.
+  const prior = req.runId ? await priorDisclosure(req.runId, view.recipient.domain) : null;
+  if (prior) {
+    const decided = new Map(prior.fields.map((f) => [f.kind, f.action]));
+    for (const f of view.decision.fields) {
+      const a = decided.get(f.kind);
+      if (a && f.allowed.includes(a)) f.action = a;
+    }
+    const hasNewKind = view.decision.fields.some((f) => !decided.has(f.kind));
+    view.decision.needsConsent = view.decision.needsConsent && hasNewKind;
+  }
+
   if (!view.decision.needsConsent) {
     view.status = "approved";
-    return finalize(view, false);
+    return finalize(view, false, prior);
   }
 
   pending.set(view.id, view);
@@ -121,7 +134,21 @@ export async function requestDisclosure(req: DisclosureRequest, opts: { timeoutM
   }
   view.status = "approved";
   emit({ type: "consent.resolved", pendingId: view.id, approved: true });
-  return finalize(view, true);
+  return finalize(view, true, prior);
+}
+
+type PriorDisclosure = {
+  id: string; tag_code: string; alias_email: string | null; created_at: string;
+  fields: { selector: string; kind: FieldKind; label: string; action: Action }[];
+};
+
+async function priorDisclosure(runId: string, domain: string): Promise<PriorDisclosure | null> {
+  const d = await db();
+  const { rows } = await d.query<PriorDisclosure>(
+    "select id, tag_code, alias_email, created_at, fields from disclosures where run_id = $1 and recipient_domain = $2 order by created_at desc limit 1",
+    [runId, domain],
+  );
+  return rows[0] ?? null;
 }
 
 export function resolveConsent(id: string, r: Resolution): boolean {
@@ -140,39 +167,46 @@ async function uniqueTagCode(): Promise<string> {
   }
 }
 
-async function finalize(view: PendingView, prompted: boolean): Promise<GateResult> {
+async function finalize(view: PendingView, prompted: boolean, prior: PriorDisclosure | null = null): Promise<GateResult> {
   const profile = loadProfile();
-  const tagCode = await uniqueTagCode();
+  const tagCode = prior?.tag_code ?? (await uniqueTagCode());
   const needsAlias = view.decision.fields.some((f) => f.kind === "email" && f.action === "tag");
-  const aliasEmail = needsAlias
-    ? await (await aliasProvider()).create(tagCode, view.recipient.domain, profile)
-    : undefined;
+  const aliasEmail = prior?.alias_email
+    ?? (needsAlias ? await (await aliasProvider()).create(tagCode, view.recipient.domain, profile) : undefined);
 
   const values: Record<string, string> = {};
-  for (const f of view.decision.fields) values[f.selector] = valueFor(f.kind, f.action, profile, { code: tagCode, aliasEmail });
+  for (const f of view.decision.fields) values[f.selector] = valueFor(f.kind, f.action, profile, { code: tagCode, aliasEmail: aliasEmail ?? undefined });
+
+  const thisStep = view.decision.fields.map(({ selector, kind, label, action }) => ({ selector, kind, label, action }));
+  const allFields = prior ? [...prior.fields.filter((p) => !thisStep.some((f) => f.kind === p.kind)), ...thisStep] : thisStep;
 
   const recipient = resolveRecipient(view.request.url, { orgName: view.request.orgName });
   const receipt = buildReceipt({
     recipient,
     risk: view.risk,
-    fields: view.decision.fields,
+    fields: allFields.map((f) => ({ ...f, allowed: [], reason: "" })),
     tagCode,
     purpose: view.request.purpose,
     principal: `telltale:${crypto.createHash("sha256").update(profile.email).digest("hex").slice(0, 16)}`,
   });
 
-  const disclosureId = crypto.randomUUID();
   const d = await db();
-  await d.query(
-    `insert into disclosures (id, recipient_host, recipient_domain, broker_ids, risk_level, tag_code, alias_email, fields, receipt, purpose)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-    [
-      disclosureId, view.recipient.host, view.recipient.domain, JSON.stringify(view.recipient.brokers.map((b) => b.id)),
-      view.risk.level, tagCode, aliasEmail ?? null,
-      JSON.stringify(view.decision.fields.map(({ selector, kind, label, action }) => ({ selector, kind, label, action }))),
-      JSON.stringify(receipt), view.request.purpose,
-    ],
-  );
+  const disclosureId = prior?.id ?? crypto.randomUUID();
+  if (prior) {
+    await d.query("update disclosures set fields = $2, receipt = $3, alias_email = $4 where id = $1", [
+      prior.id, JSON.stringify(allFields), JSON.stringify(receipt), aliasEmail ?? null,
+    ]);
+  } else {
+    await d.query(
+      `insert into disclosures (id, recipient_host, recipient_domain, broker_ids, risk_level, tag_code, alias_email, fields, receipt, purpose, run_id)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      [
+        disclosureId, view.recipient.host, view.recipient.domain, JSON.stringify(view.recipient.brokers.map((b) => b.id)),
+        view.risk.level, tagCode, aliasEmail ?? null, JSON.stringify(allFields), JSON.stringify(receipt), view.request.purpose,
+        view.request.runId ?? null,
+      ],
+    );
+  }
   emit({ type: "disclosure.created", disclosureId });
 
   return {

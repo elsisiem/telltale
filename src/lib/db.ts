@@ -19,8 +19,10 @@ create table if not exists disclosures (
   alias_email text,
   fields jsonb not null,
   receipt jsonb,
-  purpose text
+  purpose text,
+  run_id text
 );
+alter table disclosures add column if not exists run_id text;
 create table if not exists messages (
   id text primary key,
   received_at timestamptz not null,

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { emit } from "../events";
 import { requestDisclosure } from "../gate";
 import type { FieldKind } from "../policy";
+import { loadProfile } from "../vault";
 import { openBrowser, snapshot, type BrowserSession } from "./browser";
 
 // The personal agent. It browses and fills forms for the person, but it never holds their
@@ -70,6 +71,18 @@ const tools: Anthropic.Beta.BetaTool[] = [
     strict: true,
   },
   {
+    name: "set_field",
+    description:
+      "Type or select a NON-personal answer (e.g. vehicle year, coverage type, a search term). Never use this for anything about the person: use fill_form.",
+    input_schema: {
+      type: "object",
+      properties: { selector: { type: "string" }, value: { type: "string" } },
+      required: ["selector", "value"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
     name: "click",
     description: "Click a button, link or checkbox by its selector from read_page.",
     input_schema: { type: "object", properties: { selector: { type: "string" } }, required: ["selector"], additionalProperties: false },
@@ -82,6 +95,19 @@ const tools: Anthropic.Beta.BetaTool[] = [
     strict: true,
   },
 ];
+
+// With the synthetic stage persona, never submit contact details to a real business.
+const dryRun = () => process.env.TELLTALE_DRY_RUN === "1" || (process.env.TELLTALE_DRY_RUN !== "0" && loadProfile().synthetic === true);
+const SUBMIT_RE = /submit|get (my )?(free )?quotes?|see (my )?(rates|quotes)|sign ?up|create|register|send|request|finish|complete|view (my )?(rates|results)|continue|next/i;
+const CONTACT_KINDS = new Set<FieldKind>(["email", "phone", "fullName", "firstName", "lastName", "street"]);
+const contactSharedOn = new Set<string>();
+
+function looksPersonal(v: string): boolean {
+  const p = loadProfile();
+  const real = [p.email, p.phone, p.firstName, p.lastName, p.street, p.dob].filter((x) => x && x.length > 2).map((x) => x.toLowerCase());
+  const s = v.toLowerCase();
+  return /@/.test(v) || /\d{3}\D?\d{3}\D?\d{4}/.test(v) || real.some((x) => s.includes(x));
+}
 
 const FillInput = z.object({
   purpose: z.string(),
@@ -107,16 +133,33 @@ async function execute(session: BrowserSession, runId: string, name: string, inp
         const value = result.values[f.selector];
         if (!value) continue;
         const el = page.locator(f.selector);
-        const tagName = await el.evaluate((e) => e.tagName.toLowerCase());
+        const tagName = await el.evaluate("(e) => e.tagName.toLowerCase()");
         if (tagName === "select") await el.selectOption({ label: value }).catch(() => el.selectOption(value));
         else await el.fill(value);
       }
+      if (req.fields.some((f) => CONTACT_KINDS.has(f.kind) && result.values[f.selector])) contactSharedOn.add(new URL(page.url()).host);
       const lines = result.summary.map((s) => `${s.label}: ${s.action === "tag" ? "filled with a tagged value" : s.action === "send" ? "filled" : "left empty (withheld by the person)"}`);
       return { text: `Telltale ${result.prompted ? "asked the person and " : ""}filled the form.\n${lines.join("\n")}` };
     }
+    case "set_field": {
+      const { selector, value } = z.object({ selector: z.string(), value: z.string() }).parse(input);
+      if (looksPersonal(value)) return { text: "Refused: that looks like personal information. Use fill_form so Telltale can decide." };
+      const el = page.locator(selector).first();
+      const tagName = await el.evaluate("(e) => e.tagName.toLowerCase()");
+      if (tagName === "select") await el.selectOption({ label: value }).catch(() => el.selectOption(value));
+      else await el.fill(value);
+      return { text: `Set ${selector}` };
+    }
     case "click": {
       const { selector } = z.object({ selector: z.string() }).parse(input);
-      await page.locator(selector).first().click({ timeout: 10_000 });
+      const loc = page.locator(selector).first();
+      if (dryRun() && contactSharedOn.has(new URL(page.url()).host)) {
+        const label = ((await loc.textContent().catch(() => "")) ?? "") + " " + ((await loc.getAttribute("value").catch(() => "")) ?? "");
+        if (SUBMIT_RE.test(label)) {
+          return { text: "Dry run: Telltale stopped here so the demo persona's contact details are not submitted to a real company. Call finish and tell the person the form is filled and ready to submit." };
+        }
+      }
+      await loc.click({ timeout: 10_000 });
       await page.waitForLoadState("domcontentloaded").catch(() => {});
       return { text: `Clicked ${selector}. Now at ${page.url()}` };
     }

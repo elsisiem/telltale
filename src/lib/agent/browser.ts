@@ -51,51 +51,43 @@ export type PageSnapshot = {
   buttons: { selector: string; text: string }[];
 };
 
+// Plain JS string so bundlers can't inject helpers (e.g. esbuild's __name) into browser code.
+const SNAPSHOT_JS = `(() => {
+  let n = document.querySelectorAll("[data-tt]").length;
+  const tag = (el) => {
+    if (!el.getAttribute("data-tt")) el.setAttribute("data-tt", "e" + n++);
+    return '[data-tt="' + el.getAttribute("data-tt") + '"]';
+  };
+  const visible = (el) => {
+    const r = el.getBoundingClientRect();
+    const s = getComputedStyle(el);
+    return r.width > 0 && r.height > 0 && s.visibility !== "hidden" && s.display !== "none";
+  };
+  const clean = (s) => (s || "").replace(/\\s+/g, " ").trim();
+  const labelFor = (el) => {
+    const byFor = el.id ? document.querySelector('label[for="' + CSS.escape(el.id) + '"]') : null;
+    const wrapping = el.closest("label");
+    return clean((byFor && byFor.textContent) || (wrapping && wrapping.textContent) || el.getAttribute("aria-label")).slice(0, 80);
+  };
+  const skip = ["hidden", "submit", "button", "image", "reset"];
+  const fields = [...document.querySelectorAll("input, select, textarea")]
+    .filter((el) => visible(el) && !skip.includes(el.type))
+    .map((el) => ({
+      selector: tag(el), tag: el.tagName.toLowerCase(), type: el.type || "", name: el.name || "",
+      label: labelFor(el), placeholder: el.placeholder || "", autocomplete: el.autocomplete || "", required: !!el.required,
+    }));
+  const buttons = [...document.querySelectorAll("button, input[type=submit], a[role=button]")]
+    .filter(visible)
+    .map((el) => ({ selector: tag(el), text: clean(el.value || el.textContent).slice(0, 60) }));
+  const site = document.querySelector('meta[property="og:site_name"]');
+  return {
+    url: location.href, title: document.title, siteName: site ? site.getAttribute("content") : null,
+    text: ((document.body && document.body.innerText) || "").replace(/\\n{3,}/g, "\\n\\n").slice(0, 3000),
+    fields, buttons,
+  };
+})()`;
+
 /** Describe the page for the model: visible text plus every fillable field and button. */
 export async function snapshot(page: Page): Promise<PageSnapshot> {
-  return page.evaluate(() => {
-    let n = 0;
-    const tag = (el: Element) => {
-      if (!el.getAttribute("data-tt")) el.setAttribute("data-tt", `e${n++}`);
-      return `[data-tt="${el.getAttribute("data-tt")}"]`;
-    };
-    const visible = (el: Element) => {
-      const r = (el as HTMLElement).getBoundingClientRect();
-      const s = getComputedStyle(el as HTMLElement);
-      return r.width > 0 && r.height > 0 && s.visibility !== "hidden" && s.display !== "none";
-    };
-    const labelFor = (el: HTMLElement) => {
-      const id = el.id;
-      const byFor = id ? document.querySelector(`label[for="${CSS.escape(id)}"]`)?.textContent : null;
-      const wrapping = el.closest("label")?.textContent;
-      return (byFor ?? wrapping ?? el.getAttribute("aria-label") ?? "").replace(/\s+/g, " ").trim().slice(0, 80);
-    };
-    const fields = [...document.querySelectorAll("input, select, textarea")]
-      .filter((el) => visible(el) && !["hidden", "submit", "button", "image", "reset"].includes((el as HTMLInputElement).type))
-      .map((el) => {
-        const i = el as HTMLInputElement;
-        return {
-          selector: tag(el),
-          tag: el.tagName.toLowerCase(),
-          type: i.type ?? "",
-          name: i.name ?? "",
-          label: labelFor(i),
-          placeholder: i.placeholder ?? "",
-          autocomplete: i.autocomplete ?? "",
-          required: i.required,
-        };
-      });
-    const buttons = [...document.querySelectorAll("button, input[type=submit], a[role=button]")]
-      .filter(visible)
-      .map((el) => ({ selector: tag(el), text: ((el as HTMLInputElement).value || el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 60) }));
-    const siteName = document.querySelector('meta[property="og:site_name"]')?.getAttribute("content") ?? null;
-    return {
-      url: location.href,
-      title: document.title,
-      siteName,
-      text: (document.body?.innerText ?? "").replace(/\n{3,}/g, "\n\n").slice(0, 3000),
-      fields,
-      buttons,
-    };
-  });
+  return (await page.evaluate(SNAPSHOT_JS)) as PageSnapshot;
 }
