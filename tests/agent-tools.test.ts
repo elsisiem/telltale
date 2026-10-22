@@ -66,3 +66,11 @@ describe("agent tools", () => {
     expect(await session.page.evaluate("document.body.dataset.submitted")).toBeUndefined();
   }, 60_000);
 });
+
+describe("usage line", () => {
+  it("reports cached input and an estimated cost", async () => {
+    const { usageLine } = await import("@/lib/agent/run");
+    const line = usageLine({ calls: 4, input: 2_000, cacheRead: 30_000, cacheWrite: 6_000, output: 1_500 }, "claude-sonnet-5-5");
+    expect(line).toBe("Model use: 4 calls · 38.0K input (30.0K from cache) · 1.5K output · about $0.040");
+  });
+});

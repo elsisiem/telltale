@@ -214,6 +214,7 @@ export async function runAgent(task: string, opts: { runId?: string } = {}): Pro
   }, 900);
   const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: "user", content: task }];
   let summary = "Stopped without finishing.";
+  const usage: Usage = { calls: 0, input: 0, cacheRead: 0, cacheWrite: 0, output: 0 };
 
   try {
     for (let turn = 0; turn < MAX_TURNS; turn++) {
@@ -226,7 +227,14 @@ export async function runAgent(task: string, opts: { runId?: string } = {}): Pro
         output_config: { effort: "medium" },
         betas: ["server-side-fallback-2026-07-01"],
         fallbacks: "default",
+        // Each turn resends the system prompt, tools and earlier pages; caching bills that prefix at ~10%.
+        cache_control: { type: "ephemeral" },
       });
+      usage.calls++;
+      usage.input += response.usage.input_tokens;
+      usage.cacheRead += response.usage.cache_read_input_tokens ?? 0;
+      usage.cacheWrite += response.usage.cache_creation_input_tokens ?? 0;
+      usage.output += response.usage.output_tokens;
       messages.push({ role: "assistant", content: response.content });
 
       for (const block of response.content) {
@@ -274,8 +282,31 @@ export async function runAgent(task: string, opts: { runId?: string } = {}): Pro
     }
   } finally {
     clearInterval(frames);
+    if (usage.calls) {
+      const line = usageLine(usage);
+      console.log(`[agent] run ${runId}: ${line}`);
+      emit({ type: "agent.log", runId, text: line });
+    }
     emit({ type: "agent.done", runId, summary });
     await session.close().catch(() => {});
   }
   return { runId, summary };
+}
+
+type Usage = { calls: number; input: number; cacheRead: number; cacheWrite: number; output: number };
+
+// USD per million tokens: input, output, cache read, cache write (5-minute TTL).
+const PRICES: Record<string, [number, number, number, number]> = {
+  "claude-sonnet-5-5": [2, 10, 0.2, 2.5],
+  "claude-opus-5-5": [4, 20, 0.2, 5],
+  "claude-haiku-5-5": [0.1, 0.5, 0.01, 0.125],
+};
+
+/** One line for the activity log: what the run used and roughly what it cost. */
+export function usageLine(u: Usage, model = MODEL): string {
+  const k = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n));
+  const totalIn = u.input + u.cacheRead + u.cacheWrite;
+  const p = PRICES[model];
+  const cost = p ? (u.input * p[0] + u.output * p[1] + u.cacheRead * p[2] + u.cacheWrite * p[3]) / 1e6 : null;
+  return `Model use: ${u.calls} call${u.calls === 1 ? "" : "s"} · ${k(totalIn)} input (${k(u.cacheRead)} from cache) · ${k(u.output)} output${cost !== null ? ` · about $${cost.toFixed(3)}` : ""}`;
 }
