@@ -13,9 +13,9 @@ const BASE = process.argv[2] ?? "http://localhost:3200";
     await p.close();
     console.log("saved", name);
   };
-  await shot("console-1440", "/", 1440, 900);
-  await shot("console-1280", "/", 1280, 720);
-  await shot("consent", "/", 1440, 900, async (p) => {
+  await shot("console-1440", "/console", 1440, 900);
+  await shot("console-1280", "/console", 1280, 720);
+  await shot("consent", "/console", 1440, 900, async (p) => {
     await p.keyboard.press("d");
     await p.waitForTimeout(300);
     await p.fill("#preview-url", "https://www.spokeo.com/signup");

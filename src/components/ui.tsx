@@ -122,7 +122,7 @@ export function Button({ variant = "secondary", size = "md", busy, className, ch
         size === "sm" && "h-7 px-2.5 text-[11.5px]",
         size === "md" && "h-9 px-3.5 text-[12.5px]",
         size === "lg" && "h-11 px-5 text-[13.5px]",
-        variant === "primary" && "bg-ink text-white hover:bg-[#2a2e36]",
+        variant === "primary" && "bg-ink text-on-ink hover:bg-ink-hover",
         variant === "secondary" && "border border-line-strong bg-surface text-ink hover:border-ink",
         variant === "ghost" && "text-muted hover:bg-well hover:text-ink",
         variant === "accent" && "bg-accent text-white hover:bg-accent-ink",
@@ -143,10 +143,19 @@ export function Spinner() {
 
 const ICON = { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: 1.4 } as const;
 
-export type IconName = "close" | "console" | "daylight" | "evidence" | "profile" | "chevron" | "external" | "collapse" | "check" | "arrow" | "expand" | "help";
+export type IconName = "tour" | "close" | "console" | "daylight" | "evidence" | "profile" | "chevron" | "external" | "collapse" | "check" | "arrow" | "expand" | "help";
 
 export function Icon({ name, className }: { name: IconName; className?: string }) {
   switch (name) {
+    case "tour":
+      return (
+        <svg {...ICON} className={className} aria-hidden>
+          <rect x="1.5" y="6" width="3.5" height="3.5" />
+          <rect x="11" y="6" width="3.5" height="3.5" />
+          <path d="M5 7.75h6" />
+          <path d="M7 5.5l1.5 2.25L7 10" />
+        </svg>
+      );
     case "profile":
       return (
         <svg {...ICON} className={className} aria-hidden>

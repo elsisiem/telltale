@@ -25,7 +25,7 @@ export function BrowserViewer({
   }, [onClose]);
 
   return (
-    <div className="anim-fade fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-6 backdrop-blur-[2px]" onClick={onClose} role="dialog" aria-modal="true" aria-label="Agent browser">
+    <div className="anim-fade fixed inset-0 z-50 flex items-center justify-center bg-scrim p-6 backdrop-blur-[2px]" onClick={onClose} role="dialog" aria-modal="true" aria-label="Agent browser">
       <div className="anim-rise flex h-full max-h-[920px] w-full max-w-[1600px] flex-col border border-ink bg-surface" onClick={(e) => e.stopPropagation()}>
         <div className="flex h-11 shrink-0 items-center gap-3 border-b border-line px-4">
           <span className="label text-ink">Agent browser</span>

@@ -1,7 +1,8 @@
 # Telltale: 3-minute demo script
 
 Setup before going on stage:
-- Open **https://telltale-app.fly.dev** and sign in (user `telltale`, password from `.env.local`). Press **d** once to confirm the stage panel opens.
+- Open **https://telltale-app.fly.dev/console** and sign in (user `telltale`, password from `.env.local`). Press **d** once to confirm the stage panel opens.
+- **Opening option:** start on **https://telltale-app.fly.dev/tour** (public, no password) and let it play the seven steps while you give the hook. Its last step, **Run it live**, opens the console with the car-insurance task already filled in.
 - Press **Reset demo** in the stage panel. This clears earlier runs and frees Telltale's own AgentMail inboxes.
 - **Warm-up:** run the car-insurance preset once before going on stage. If Kernel's browser crashes on that site, Telltale remembers it and goes straight to its bundled browser next time, which saves about 15 seconds.
 - Have `/daylight` open in a second tab. A sweep keeps running if you switch tabs or pages; the top bar shows its progress.

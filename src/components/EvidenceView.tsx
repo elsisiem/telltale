@@ -86,7 +86,7 @@ export function EvidenceView({ leakId }: { leakId: string }) {
       state={state}
       crumbs={["Telltale", "Evidence", ev?.tagCode ?? leakId.slice(0, 8)]}
       actions={
-        <Link href="/" className="inline-flex h-7 items-center gap-1.5 px-2.5 font-mono text-[11.5px] text-muted transition-colors hover:bg-well hover:text-ink">
+        <Link href="/console" className="inline-flex h-7 items-center gap-1.5 px-2.5 font-mono text-[11.5px] text-muted transition-colors hover:bg-well hover:text-ink">
           Back to console
         </Link>
       }
@@ -181,7 +181,7 @@ export function EvidenceView({ leakId }: { leakId: string }) {
                     <Button size="sm" onClick={download} disabled={!doc}>
                       Download .txt
                     </Button>
-                    <a href={CPPA_FORM} target="_blank" rel="noreferrer" className="inline-flex h-7 items-center gap-1.5 rounded-[3px] bg-ink px-2.5 font-mono text-[11.5px] font-medium text-white transition-colors hover:bg-[#2a2e36]">
+                    <a href={CPPA_FORM} target="_blank" rel="noreferrer" className="inline-flex h-7 items-center gap-1.5 rounded-[3px] bg-ink px-2.5 font-mono text-[11.5px] font-medium text-on-ink transition-colors hover:bg-ink-hover">
                       CPPA complaint form
                       <Icon name="external" className="size-3.5" />
                     </a>

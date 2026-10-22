@@ -17,6 +17,9 @@
   --color-accent: #ff4f00;
   --color-accent-ink: #d63f00;
   --color-accent-wash: #fff5ef;
+  --color-on-ink: #ffffff;
+  --color-ink-hover: #2a2e36;
+  --color-scrim: rgb(17 19 24 / 0.25);
   --color-ok: #16a34a;
   --color-ok-ink: #15803d;
   --color-ok-fill: #a7e3bc;
@@ -32,11 +35,38 @@
   --font-mono: var(--font-jetbrains), "JetBrains Mono", "SF Mono", ui-monospace, "Cascadia Mono", monospace;
 }
 
+/* Dark theme: same roles, inverted values. Documents stay paper. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: #0c0e11;
+  --color-surface: #14171c;
+  --color-well: #1a1e24;
+  --color-hover: #181c22;
+  --color-line: #262b33;
+  --color-line-strong: #363d48;
+  --color-ink: #e8eaed;
+  --color-ink-2: #c3c8cf;
+  --color-muted: #8c949f;
+  --color-faint: #606974;
+  --color-accent: #ff5a14;
+  --color-accent-ink: #ff8146;
+  --color-accent-wash: #2a160c;
+  --color-on-ink: #0c0e11;
+  --color-ink-hover: #ffffff;
+  --color-scrim: rgb(0 0 0 / 0.6);
+  --color-ok: #22c55e;
+  --color-ok-ink: #4ade80;
+  --color-ok-fill: #2f8a55;
+}
+
 /* Global typography. Body copy, descriptions and text inputs are Inter; headings, labels,
    buttons, status and data are JetBrains Mono. Set here so every page inherits it. */
 @layer base {
   :root {
     color-scheme: light;
+  }
+  html {
+    transition: background-color 150ms ease;
   }
   html {
     font-family: var(--font-sans);
@@ -240,6 +270,29 @@
   .anim-blink,
   .anim-tile,
   .scanline::after {
+    animation: none;
+  }
+}
+
+/* Tour: the step progress bar and the active edge's marching dashes. */
+@keyframes tour-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+@keyframes tour-dash {
+  to {
+    stroke-dashoffset: -22;
+  }
+}
+.tour-flow {
+  animation: tour-dash 0.9s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-flow {
     animation: none;
   }
 }

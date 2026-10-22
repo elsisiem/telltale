@@ -1,10 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 // A deployed Telltale can spend model credits and send letters, so it sits behind a password
-// (HTTP Basic, user "telltale"). The fictional demo pages stay public so a cloud browser can load them.
+// (HTTP Basic, user "telltale"). The landing page, the tour and the fictional demo pages are public.
+const PUBLIC = new Set(["/", "/tour", "/icon.svg"]);
+
 export function middleware(req: NextRequest) {
   const password = process.env.TELLTALE_PASSWORD?.trim();
   if (!password) return NextResponse.next();
+  // The overview and the walkthrough are public: static content, no data, no model calls.
+  if (PUBLIC.has(req.nextUrl.pathname)) return NextResponse.next();
   const header = req.headers.get("authorization") ?? "";
   if (header.startsWith("Basic ")) {
     const decoded = atob(header.slice(6));

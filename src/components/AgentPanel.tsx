@@ -6,11 +6,11 @@ import { BrowserViewer } from "./BrowserViewer";
 import { Button, Card, CardHeader, Icon, Tag } from "./ui";
 
 // Stage presets. Edit freely: `label` is the chip text, `task` is what the agent receives.
-export const PRESETS: { label: string; task: string }[] = [
+export const PRESETS: { key: string; label: string; task: string }[] = [
   // Bayview Dental is a fictional office Telltale hosts for demos; {origin} would point at this app.
-  { label: "Dental cleaning", task: "Book a dental cleaning at https://bayview-dental.fly.dev using my details" },
-  { label: "Car insurance quotes", task: "Get me car insurance quotes at https://www.bestautoinsurance.com for my 2019 Honda Civic. Use my details where the form asks." },
-  { label: "People-search account", task: "Create a free account at https://www.spokeo.com so I can check what it shows about me" },
+  { key: "dental", label: "Dental cleaning", task: "Book a dental cleaning at https://bayview-dental.fly.dev using my details" },
+  { key: "insurance", label: "Car insurance quotes", task: "Get me car insurance quotes at https://www.bestautoinsurance.com for my 2019 Honda Civic. Use my details where the form asks." },
+  { key: "people", label: "People-search account", task: "Create a free account at https://www.spokeo.com so I can check what it shows about me" },
 ];
 
 export type LogEntry =
@@ -118,7 +118,12 @@ export function AgentPanel({
 }) {
   const withOrigin = (t: string) => (typeof window === "undefined" ? t : t.replaceAll("{origin}", window.location.origin));
   const [task, setTask] = useState(PRESETS[0].task);
-  useEffect(() => setTask((t) => withOrigin(t)), []);
+  // ?preset=insurance (from the tour) picks a starting task; otherwise the first preset.
+  useEffect(() => {
+    const key = new URLSearchParams(window.location.search).get("preset");
+    const preset = PRESETS.find((p) => p.key === key);
+    setTask(withOrigin(preset ? preset.task : PRESETS[0].task));
+  }, []);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -179,7 +184,7 @@ export function AgentPanel({
               <button
                 key={p.label}
                 onClick={() => setTask(withOrigin(p.task))}
-                className={cx("h-6 border px-2 font-mono text-[11px] transition-colors", on ? "border-ink bg-ink text-white" : "border-line-strong text-ink-2 hover:border-ink hover:text-ink")}
+                className={cx("h-6 border px-2 font-mono text-[11px] transition-colors", on ? "border-ink bg-ink text-on-ink" : "border-line-strong text-ink-2 hover:border-ink hover:text-ink")}
               >
                 {p.label}
               </button>
@@ -188,7 +193,7 @@ export function AgentPanel({
         </div>
         <Button variant="primary" onClick={run} busy={busy} disabled={task.trim().length < 3 || running} className="mt-3 w-full">
           {running ? "Agent is running" : "Run agent"}
-          {!running && <span className="kbd border-white/25 bg-transparent text-white/60">Ctrl ↵</span>}
+          {!running && <span className="kbd border-on-ink/25 bg-transparent text-on-ink/60">Ctrl ↵</span>}
         </Button>
         {!modelOn && !error && <p className="mt-2 text-[12px] text-muted">No model key set. Use stage controls (D) to preview a site.</p>}
         {error && <p className="mt-2 border-l-2 border-accent pl-2 text-[12px] text-accent-ink">{error.includes("ANTHROPIC_API_KEY") ? "The agent needs ANTHROPIC_API_KEY. Preview a site from stage controls (D)." : error}</p>}

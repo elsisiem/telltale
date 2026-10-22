@@ -5,7 +5,7 @@ const BASE = process.argv[2] ?? "http://localhost:3200";
 (async () => {
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
-  await p.goto(BASE, { waitUntil: "networkidle" });
+  await p.goto(`${BASE}/console`, { waitUntil: "networkidle" });
   await p.getByRole("button", { name: "Car insurance quotes" }).click();
   await p.getByRole("button", { name: /Run agent/ }).click();
   await p.waitForTimeout(7000);

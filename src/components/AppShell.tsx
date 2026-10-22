@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { cx } from "./format";
 import { Guide } from "./Guide";
 import { Logo } from "./Logo";
+import { ThemeToggle } from "./Theme";
 
 import type { UiState } from "./types";
 import { Button, Icon, Indicator, Tag, type IconName } from "./ui";
@@ -129,7 +130,7 @@ function Sidebar({ active, state, connected }: { active: NavKey; state: UiState 
 
   return (
     <aside className={cx("flex h-full shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-200", collapsed ? "w-[52px]" : "w-[228px]")}>
-      <div className={cx("flex h-14 shrink-0 items-center border-b border-line", collapsed ? "justify-center" : "gap-2.5 px-3.5")}>
+      <Link href="/" className={cx("flex h-14 shrink-0 items-center border-b border-line transition-colors hover:bg-hover", collapsed ? "justify-center" : "gap-2.5 px-3.5")} title="Telltale home">
         <Logo size={22} />
         {!collapsed && (
           <div className="min-w-0 leading-none">
@@ -137,11 +138,12 @@ function Sidebar({ active, state, connected }: { active: NavKey; state: UiState 
             <div className="mt-1 font-mono text-[9.5px] uppercase tracking-[0.12em] text-faint">Consent layer</div>
           </div>
         )}
-      </div>
+      </Link>
 
       <nav className="flex flex-col gap-0.5 py-3" aria-label="Primary">
         {!collapsed && <div className="label mb-1.5 px-3">Workspace</div>}
-        <NavItem href="/" icon="console" label="Console" active={active === "console"} collapsed={collapsed} />
+        <NavItem href="/console" icon="console" label="Console" active={active === "console"} collapsed={collapsed} />
+        <NavItem href="/tour" icon="tour" label="Tour" active={false} collapsed={collapsed} hint="7 steps" />
         <NavItem
           href="/daylight"
           icon="daylight"
@@ -179,6 +181,7 @@ function Sidebar({ active, state, connected }: { active: NavKey; state: UiState 
         )}
       </div>
 
+      <ThemeToggle collapsed={collapsed} />
       <button
         onClick={toggle}
         className={cx("flex h-10 shrink-0 items-center gap-2 border-t border-line font-mono text-[11.5px] text-muted transition-colors hover:bg-hover hover:text-ink", collapsed ? "justify-center" : "px-3.5")}

@@ -1,5 +1,6 @@
-import { Console } from "@/components/Console";
+import { Landing } from "@/components/Landing";
+import { publicFacts } from "@/lib/facts";
 
 export default function Home() {
-  return <Console />;
+  return <Landing facts={publicFacts()} />;
 }

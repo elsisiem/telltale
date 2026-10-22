@@ -37,6 +37,19 @@ Personal AI agents now fill in forms for us: insurance quotes, sign-ups, booking
 | Exa company search (optional) | Matching brand domains that brokers never listed | A name match can be wrong. Exa is only used when the domain itself isn't in the registry. |
 | Leak attribution | Tracing who passed on a tagged identifier | A tag being contacted proves the data moved, not who sold it. The strong case is narrower: contact *after* the opt-out deadline. Shared marketing vendors can blur the trail. |
 
+## Pages
+
+| Path | What it is | Access |
+|---|---|---|
+| `/` | Overview: the problem, how it works, the product and the public data behind it | Public |
+| `/tour` | Animated walkthrough of one disclosure, from the agent's request to a complaint, using the real filing for a real quote site | Public |
+| `/console` | The live product: agent, Sentry pipeline, data trail, ledger | Password |
+| `/daylight` | Live compliance sweep of all registered brokers | Password |
+| `/evidence/:id` | The exhibit for a traced leak, with the complaint draft | Password |
+| `/profile` | Your details (encrypted) and the dry-run setting | Password |
+
+Light and dark mode are switched from the sidebar, or with the button in the header on the public pages.
+
 ## Run it
 
 ```bash

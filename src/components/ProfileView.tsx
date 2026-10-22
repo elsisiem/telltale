@@ -135,7 +135,7 @@ function DryRun({ data, onSaved }: { data: ProfileResponse; onSaved: () => void 
         onClick={toggle}
         className={cx("relative h-6 w-11 shrink-0 border transition-colors disabled:cursor-not-allowed disabled:opacity-60", on ? "border-ink bg-ink" : "border-line-strong bg-surface")}
       >
-        <span className={cx("absolute top-[3px] size-4 transition-[left] duration-150", on ? "left-[23px] bg-white" : "left-[3px] bg-line-strong")} />
+        <span className={cx("absolute top-[3px] size-4 transition-[left] duration-150", on ? "left-[23px] bg-on-ink" : "left-[3px] bg-line-strong")} />
         <span className="sr-only">Dry run</span>
       </button>
     </div>

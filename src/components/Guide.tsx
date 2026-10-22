@@ -38,7 +38,7 @@ export function Guide({ open, onClose }: { open: boolean; onClose: () => void })
   if (!open) return null;
 
   return (
-    <div className="anim-fade fixed inset-0 z-50 flex justify-end bg-ink/20" onClick={onClose}>
+    <div className="anim-fade fixed inset-0 z-50 flex justify-end bg-scrim" onClick={onClose}>
       <aside className="anim-rise flex h-full w-[440px] max-w-full flex-col border-l border-ink bg-surface" onClick={(e) => e.stopPropagation()} aria-label="How Telltale works">
         <div className="flex h-14 shrink-0 items-center justify-between border-b border-line px-5">
           <h2 className="font-mono text-[13px] font-semibold text-ink">How Telltale works</h2>

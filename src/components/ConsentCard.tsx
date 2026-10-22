@@ -9,7 +9,7 @@ import { Button, Icon, Tag } from "./ui";
 const ACTIONS: Action[] = ["send", "tag", "withhold"];
 const ACTION_LABEL: Record<Action, string> = { send: "Send", tag: "Tag", withhold: "Withhold" };
 const ACTION_ACTIVE: Record<Action, string> = {
-  send: "bg-ink text-white",
+  send: "bg-ink text-on-ink",
   tag: "bg-accent text-white",
   withhold: "bg-well text-ink shadow-[inset_0_0_0_1px_var(--color-ink)]",
 };
@@ -100,7 +100,7 @@ export function ConsentCard({ view, readOnly, onClose }: { view: CardView; readO
   }
 
   return (
-    <div className="anim-fade fixed inset-0 z-50 flex items-center justify-center bg-ink/25 p-6 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-labelledby="consent-title">
+    <div className="anim-fade fixed inset-0 z-50 flex items-center justify-center bg-scrim p-6 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-labelledby="consent-title">
       <div className="anim-rise flex max-h-full w-full max-w-[1120px] flex-col border border-ink bg-surface shadow-[0_24px_60px_-24px_rgba(17,19,24,0.35)]">
         {/* status strip */}
         <div className={cx("flex h-10 shrink-0 items-center justify-between gap-4 border-b px-6", isBroker ? "border-accent bg-accent text-white" : "border-line bg-well text-ink")}>

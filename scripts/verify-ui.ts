@@ -19,7 +19,7 @@ async function step(name: string, fn: () => Promise<void>) {
   const b = await chromium.launch();
   const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, ...(pw ? { httpCredentials: { username: "telltale", password: pw } } : {}) });
   const p: Page = await ctx.newPage();
-  await p.goto(BASE, { waitUntil: "networkidle" });
+  await p.goto(`${BASE}/console`, { waitUntil: "networkidle" });
 
   await step("run agent and expand the browser view", async () => {
     await p.getByRole("button", { name: "Dental cleaning" }).click();
@@ -53,7 +53,7 @@ async function step(name: string, fn: () => Promise<void>) {
     await p.goto(`${BASE}/daylight`, { waitUntil: "networkidle" });
     await p.getByRole("button", { name: /Run sweep/ }).click();
     await p.waitForTimeout(6000);
-    await p.goto(BASE, { waitUntil: "networkidle" });
+    await p.goto(`${BASE}/console`, { waitUntil: "networkidle" });
     await p.waitForTimeout(2500);
     await p.screenshot({ path: out("sweep-console") });
     await p.goto(`${BASE}/daylight`, { waitUntil: "networkidle" });
