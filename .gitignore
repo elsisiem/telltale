@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# telltale local vault, keys, db
+/.telltale/
+!.env.example
