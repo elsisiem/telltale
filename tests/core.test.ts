@@ -27,6 +27,7 @@ describe("domains", () => {
     expect(splitUrls("https://a.com/privacy; www.b.com/optout and c.org")).toEqual([
       "https://a.com/privacy", "www.b.com/optout", "c.org",
     ]);
+    expect(splitUrls("https://www.clearview.ai/privacy-and-requests")).toEqual(["https://www.clearview.ai/privacy-and-requests"]);
   });
 });
 
