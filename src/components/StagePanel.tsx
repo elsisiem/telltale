@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { api } from "./format";
 import type { CardView } from "./types";
+import { useToast } from "./Toast";
 import { Button, Icon } from "./ui";
 
 const PREVIEW_SUGGESTIONS = ["https://www.bestautoinsurance.com", "https://www.spokeo.com/signup", "https://www.uplead.com", "https://rocketreach.co/signup"];
 
 export function StagePanel({ open, onClose, onPreview, onRefresh }: { open: boolean; onClose: () => void; onPreview: (v: CardView) => void; onRefresh: () => void }) {
+  const toast = useToast();
   const [url, setUrl] = useState(PREVIEW_SUGGESTIONS[0]);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
@@ -17,7 +19,10 @@ export function StagePanel({ open, onClose, onPreview, onRefresh }: { open: bool
     setMsg(null);
     try {
       const text = await fn();
-      if (text) setMsg({ tone: "ok", text });
+      if (text) {
+        setMsg({ tone: "ok", text });
+        toast(text);
+      }
     } catch (e) {
       setMsg({ tone: "err", text: (e as Error).message });
     } finally {

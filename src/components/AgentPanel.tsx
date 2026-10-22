@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { api, cx, fmtTime, hostOf } from "./format";
-import { Button, Card, CardHeader, Empty, Tag } from "./ui";
+import { BrowserViewer } from "./BrowserViewer";
+import { Button, Card, CardHeader, Icon, Tag } from "./ui";
 
 // Stage presets. Edit freely: `label` is the chip text, `task` is what the agent receives.
 export const PRESETS: { label: string; task: string }[] = [
@@ -119,6 +120,7 @@ export function AgentPanel({
   const [task, setTask] = useState(PRESETS[0].task);
   useEffect(() => setTask((t) => withOrigin(t)), []);
   const [busy, setBusy] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Keep the newest activity in view by scrolling the log itself, never the page around it.
   const logBox = useRef<HTMLDivElement>(null);
@@ -194,20 +196,44 @@ export function AgentPanel({
 
       {(frame || liveViewUrl) && (
         <figure className="border-b border-line">
-          <figcaption className="flex h-7 items-center justify-between gap-2 border-b border-line bg-well px-3">
+          <figcaption className="flex h-7 items-center justify-between gap-2 border-b border-line bg-well pl-3 pr-1">
             <span className="truncate font-mono text-[11px] text-ink-2">{frame ? hostOf(frame.url) : "Live browser"}</span>
-            <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
-              <span className={cx("size-[6px]", running ? "anim-blink bg-accent" : "bg-line-strong")} />
-              {running ? "live" : "last frame"}
+            <span className="flex shrink-0 items-center gap-2">
+              <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
+                <span className={cx("size-[6px]", running ? "anim-blink bg-accent" : "bg-line-strong")} />
+                {running ? "live" : "last frame"}
+              </span>
+              <button onClick={() => setExpanded(true)} className="flex h-5 items-center gap-1 border border-line-strong bg-surface px-1.5 font-mono text-[10px] text-ink-2 transition-colors hover:border-ink hover:text-ink" title="Expand the browser view">
+                <Icon name="expand" className="size-3" />
+                Expand
+              </button>
             </span>
           </figcaption>
           {frame ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={`data:image/jpeg;base64,${frame.data}`} alt="What the agent's browser shows" className="h-[168px] w-full object-cover object-top" />
+            <button onClick={() => setExpanded(true)} className="group relative block w-full cursor-zoom-in" aria-label="Expand the browser view">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`data:image/jpeg;base64,${frame.data}`} alt="What the agent's browser shows" className="h-[168px] w-full object-cover object-top" />
+              <span className="absolute inset-0 bg-ink/0 transition-colors group-hover:bg-ink/5" aria-hidden />
+            </button>
           ) : (
             <iframe src={liveViewUrl!} className="h-[168px] w-full" allow="autoplay; clipboard-read; clipboard-write" title="Agent browser live view" />
           )}
         </figure>
+      )}
+      {expanded && (
+        <BrowserViewer
+          frame={frame}
+          liveViewUrl={liveViewUrl}
+          running={running}
+          onClose={() => setExpanded(false)}
+          activity={
+            <ol className="flex flex-col">
+              {log.slice(-40).map((e) => (
+                <LogRow key={e.id} e={e} />
+              ))}
+            </ol>
+          }
+        />
       )}
 
       <div className="flex h-8 shrink-0 items-center justify-between border-b border-line px-4">
@@ -216,7 +242,21 @@ export function AgentPanel({
       </div>
       <div ref={logBox} className="min-h-[96px] flex-1 overflow-y-auto py-1">
         {log.length === 0 ? (
-          <Empty className="m-3">The agent never sees personal details. It asks for field types; Telltale decides and types the values.</Empty>
+          <div className="m-3 border border-dashed border-line-strong px-4 py-3">
+            <p className="label mb-2 text-ink">Start here</p>
+            <ol className="flex flex-col gap-1.5 text-[12.5px] leading-snug text-ink-2">
+              <li className="flex gap-2">
+                <span className="font-mono text-faint">1</span> Pick a task above, or write your own.
+              </li>
+              <li className="flex gap-2">
+                <span className="font-mono text-faint">2</span> Run the agent. Its browser appears here.
+              </li>
+              <li className="flex gap-2">
+                <span className="font-mono text-faint">3</span> When a form asks for personal data, Telltale intercepts it. Registered brokers wait for your decision.
+              </li>
+            </ol>
+            <p className="mt-2.5 text-[11.5px] text-muted">The agent never sees your details. It asks for field types; Telltale types the values.</p>
+          </div>
         ) : (
           <ol className="flex flex-col">
             {log.map((e) => (

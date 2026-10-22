@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api, dayNumber, fmtDate, fmtShortDate } from "./format";
 import type { ComplaintDoc, LeakRow, RequestRow, UiState } from "./types";
+import { useToast } from "./Toast";
 import { Button, SimTag, Tag, TagCode } from "./ui";
 
 export function complaintKey(leakId: string) {
@@ -12,6 +13,7 @@ export function complaintKey(leakId: string) {
 
 /** Incident strip shown above the console when a tagged identifier surfaces somewhere it was never given. */
 export function LeakAlert({ leak, state, onChanged }: { leak: LeakRow; state: UiState; onChanged: () => void }) {
+  const toast = useToast();
   const router = useRouter();
   const [busy, setBusy] = useState<"complaint" | "delete" | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -43,7 +45,9 @@ export function LeakAlert({ leak, state, onChanged }: { leak: LeakRow; state: Ui
     setBusy("delete");
     setErr(null);
     try {
-      setDeletion(await api<RequestRow>(`/api/leaks/${leak.id}/delete`, { method: "POST" }));
+      const r = await api<RequestRow>(`/api/leaks/${leak.id}/delete`, { method: "POST" });
+      setDeletion(r);
+      toast("Deletion request ready", { detail: `Addressed to ${leak.sender_domain}. Due ${fmtDate(r.due_at)}.` });
       onChanged();
     } catch (e) {
       setErr((e as Error).message);

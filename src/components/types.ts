@@ -88,4 +88,5 @@ export type DaylightScan = {
   finishedAt: string | null;
   summary: { total: number; counts: Record<DaylightStatus, number>; hidden: unknown[]; carriedOver?: number } | null;
 };
-export type DaylightResponse = { scan: DaylightScan | null; results: DaylightResult[] };
+export type DaylightRunning = { scanId: string; startedAt: string; total: number; done: number; statuses?: Record<string, DaylightStatus> };
+export type DaylightResponse = { scan: DaylightScan | null; results: DaylightResult[]; running?: DaylightRunning | null };

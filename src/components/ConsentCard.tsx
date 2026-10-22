@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, cx } from "./format";
 import type { Action, CardView } from "./types";
+import { useToast } from "./Toast";
 import { Button, Icon, Tag } from "./ui";
 
 const ACTIONS: Action[] = ["send", "tag", "withhold"];
@@ -56,6 +57,7 @@ function Segmented({ allowed, value, onChange, disabled }: { allowed: Action[]; 
 }
 
 export function ConsentCard({ view, readOnly, onClose }: { view: CardView; readOnly?: boolean; onClose: () => void }) {
+  const toast = useToast();
   const initial = useMemo(() => Object.fromEntries(view.decision.fields.map((f) => [f.selector, f.action])) as Record<string, Action>, [view]);
   const [actions, setActions] = useState(initial);
   const [busy, setBusy] = useState<"approve" | "deny" | null>(null);
@@ -85,6 +87,10 @@ export function ConsentCard({ view, readOnly, onClose }: { view: CardView; readO
     setErr(null);
     try {
       await api(`/api/consent/${view.id}`, { json: approved ? { approved, actions } : { approved } });
+      toast(approved ? `Released to ${view.recipient.host}` : "Not shared", {
+        detail: approved ? `${counts.send} sent · ${counts.tag} tagged · ${counts.withhold} withheld. A signed receipt is in the ledger.` : "The agent was told you declined. Nothing was typed.",
+        tone: approved ? "ok" : "accent",
+      });
       onClose();
     } catch (e) {
       setErr((e as Error).message);
@@ -104,6 +110,7 @@ export function ConsentCard({ view, readOnly, onClose }: { view: CardView; readO
           </span>
           <span className={cx("font-mono text-[11px]", isBroker ? "text-white/80" : "text-muted")}>
             {view.recipient.matchedBy === "none" ? "no registry match" : `matched by ${view.recipient.matchedBy.replace("registry-", "registry ")}`}
+            {!readOnly && view.createdAt && <WaitTimer since={view.createdAt} />}
           </span>
         </div>
 
@@ -243,5 +250,24 @@ export function ConsentCard({ view, readOnly, onClose }: { view: CardView; readO
         </div>
       </div>
     </div>
+  );
+}
+
+// The gate declines on the person's behalf after 10 minutes without an answer.
+const CONSENT_TIMEOUT_MS = 10 * 60_000;
+
+function WaitTimer({ since }: { since: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const waited = Math.max(0, now - new Date(since).getTime());
+  const left = Math.max(0, CONSENT_TIMEOUT_MS - waited);
+  const mmss = (ms: number) => `${Math.floor(ms / 60_000)}:${String(Math.floor((ms % 60_000) / 1000)).padStart(2, "0")}`;
+  return (
+    <span className="ml-3 border-l border-white/30 pl-3" title="Without an answer, Telltale declines for you after 10 minutes">
+      agent waiting {mmss(waited)} · auto-declines in {mmss(left)}
+    </span>
   );
 }

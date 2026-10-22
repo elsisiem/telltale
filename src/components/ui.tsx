@@ -143,8 +143,30 @@ export function Spinner() {
 
 const ICON = { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: 1.4 } as const;
 
-export function Icon({ name, className }: { name: "close" | "console" | "daylight" | "evidence" | "chevron" | "external" | "collapse" | "check" | "arrow"; className?: string }) {
+export type IconName = "close" | "console" | "daylight" | "evidence" | "profile" | "chevron" | "external" | "collapse" | "check" | "arrow" | "expand" | "help";
+
+export function Icon({ name, className }: { name: IconName; className?: string }) {
   switch (name) {
+    case "profile":
+      return (
+        <svg {...ICON} className={className} aria-hidden>
+          <rect x="5.5" y="2.5" width="5" height="5" />
+          <path d="M2.5 13.5v-1.5a3 3 0 0 1 3-3h5a3 3 0 0 1 3 3v1.5" />
+        </svg>
+      );
+    case "expand":
+      return (
+        <svg {...ICON} className={className} aria-hidden>
+          <path d="M9.5 2.5h4v4M13.5 2.5L9 7M6.5 13.5h-4v-4M2.5 13.5L7 9" />
+        </svg>
+      );
+    case "help":
+      return (
+        <svg {...ICON} className={className} aria-hidden>
+          <rect x="2.5" y="2.5" width="11" height="11" />
+          <path d="M6.2 6.3a1.9 1.9 0 0 1 3.7.4c0 1.3-1.9 1.6-1.9 2.8M8 11.3v.2" />
+        </svg>
+      );
     case "close":
       return (
         <svg {...ICON} className={className} aria-hidden>

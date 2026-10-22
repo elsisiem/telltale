@@ -27,6 +27,8 @@ export function Console() {
   const [running, setRunning] = useState(false);
   const [card, setCard] = useState<{ view: CardView; readOnly: boolean } | null>(null);
   const [stageOpen, setStageOpen] = useState(false);
+  // A ledger entry chosen for the pipeline; null follows the latest disclosure.
+  const [focusId, setFocusId] = useState<string | null>(null);
   const closedIds = useRef(new Set<string>());
 
   const showPending = useCallback(async (id: string) => {
@@ -135,7 +137,7 @@ export function Console() {
       ) : (
         <div className="flex h-full flex-col gap-4 p-5">
           {leak && <LeakAlert key={leak.id} leak={leak} state={state} onChanged={refreshSoon} />}
-          <Pipeline state={state} pending={livePending} running={running} onReview={() => livePending && setCard({ view: livePending, readOnly: false })} />
+          <Pipeline state={state} pending={livePending} running={running} focusId={focusId} onClearFocus={() => setFocusId(null)} onReview={() => livePending && setCard({ view: livePending, readOnly: false })} />
           <div className="grid min-h-[520px] flex-1 grid-cols-1 gap-4 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[312px_minmax(0,1fr)_356px] 2xl:grid-cols-[340px_minmax(0,1fr)_384px]">
             <AgentPanel
               log={log}
@@ -152,7 +154,7 @@ export function Console() {
             />
             <TrailCard state={state} />
             <div className="min-h-0 lg:col-span-2 xl:col-span-1">
-              <Ledger state={state} onChanged={refreshSoon} />
+              <Ledger state={state} onChanged={refreshSoon} focusId={focusId} onInspect={(id) => setFocusId((f) => (f === id ? null : id))} />
             </div>
           </div>
           <footer className="flex items-center justify-between font-mono text-[10.5px] text-faint">

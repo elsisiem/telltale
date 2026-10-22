@@ -6,6 +6,7 @@ import type { Finding } from "@/lib/risk";
 import { AppShell } from "./AppShell";
 import { ApiError, api, cx, fmtStamp } from "./format";
 import { useDashboard, useEvents } from "./hooks";
+import { useToast } from "./Toast";
 import type { DaylightResponse, DaylightResult, DaylightStatus } from "./types";
 import { Button, Card, CardHeader, Icon, Tag } from "./ui";
 
@@ -15,7 +16,7 @@ type Tile = { brokerId: string; name: string; status: TileStatus; result?: Dayli
 // Monochrome board: the eye should land only on the orange, which is the problem.
 const STATUS: Record<TileStatus, { label: string; tile: string; blurb: string }> = {
   hidden: { label: "Hidden", tile: "bg-accent", blurb: "The rights page tells search engines not to index it." },
-  visible: { label: "Visible", tile: "bg-[#cfd5dc]", blurb: "The rights page is indexable and reachable." },
+  visible: { label: "Visible", tile: "bg-ok-fill", blurb: "The rights page is indexable and reachable." },
   blocked: { label: "Blocked", tile: "hatch bg-well", blurb: "The page refused an automated visit (bot protection)." },
   unreachable: { label: "Unreachable", tile: "border border-line-strong bg-surface", blurb: "The page did not load." },
   pending: { label: "Not checked", tile: "bg-well", blurb: "" },
@@ -110,7 +111,8 @@ function BrokerPanel({ tile, onClose }: { tile: Tile; onClose: () => void }) {
 }
 
 export function DaylightBoard() {
-  const { state } = useDashboard();
+  const { state, refreshSoon } = useDashboard();
+  const toast = useToast();
   const [data, setData] = useState<DaylightResponse | null>(null);
   const [phase, setPhase] = useState<"loading" | "ok" | "missing" | "error">("loading");
   const [errMsg, setErrMsg] = useState<string | null>(null);
@@ -123,7 +125,14 @@ export function DaylightBoard() {
 
   const load = useCallback(async () => {
     try {
-      setData(await api<DaylightResponse>("/api/daylight"));
+      const r = await api<DaylightResponse>("/api/daylight");
+      setData(r);
+      // A sweep started earlier (from this page or another) is still running: pick it back up.
+      if (r.running) {
+        setScanId(r.running.scanId);
+        setLive(new Map(Object.entries(r.running.statuses ?? {})));
+        setProgress({ done: r.running.done, total: r.running.total });
+      }
       setPhase("ok");
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) setPhase("missing");
@@ -147,14 +156,17 @@ export function DaylightBoard() {
         setLive((m) => new Map(m).set(e.brokerId, e.status as DaylightStatus));
         clearTimeout(refetchTimer.current);
         refetchTimer.current = setTimeout(load, 1500);
+        refreshSoon();
       } else if (e.type === "scan.done") {
+        toast("Sweep complete", { detail: "Results saved. Blocked pages keep their last conclusive result." });
         setScanId(null);
         setProgress(null);
         setLive(new Map());
         void load();
+        refreshSoon();
       }
     },
-    [load],
+    [load, toast, refreshSoon],
   );
   const connected = useEvents(onEvent);
 
@@ -167,10 +179,11 @@ export function DaylightBoard() {
     setStarting(true);
     setErrMsg(null);
     try {
-      const r = await api<{ scanId: string }>("/api/daylight/run", { method: "POST" });
+      const r = await api<{ scanId: string; alreadyRunning?: boolean }>("/api/daylight/run", { method: "POST" });
       setScanId(r.scanId);
       setLive(new Map());
       setProgress({ done: 0, total });
+      toast(r.alreadyRunning ? "Sweep already running" : "Sweep started", { detail: "It runs on the server. You can leave this page; progress shows in the top bar." });
     } catch (e) {
       setErrMsg(e instanceof ApiError && e.status === 404 ? "The sweep endpoint isn't available on this server." : (e as Error).message);
     } finally {
@@ -241,7 +254,7 @@ export function DaylightBoard() {
                   <span className={cx("size-2.5", STATUS[k].tile)} />
                   {STATUS[k].label}
                 </dt>
-                <dd className={cx("mt-1 font-mono text-[28px] font-semibold leading-none tabular-nums", k === "hidden" && counts[k] ? "text-accent-ink" : counts[k] ? "text-ink" : "text-faint")}>{counts[k]}</dd>
+                <dd className={cx("mt-1 font-mono text-[28px] font-semibold leading-none tabular-nums", k === "hidden" && counts[k] ? "text-accent-ink" : k === "visible" && counts[k] ? "text-ok-ink" : counts[k] ? "text-ink" : "text-faint")}>{counts[k]}</dd>
               </div>
             ))}
           </dl>

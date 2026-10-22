@@ -93,8 +93,9 @@ function useFindings(d: DisclosureRow | undefined): Finding[] | null {
   return findings;
 }
 
-export function Pipeline({ state, pending, running, onReview }: { state: UiState; pending: CardView | null; running: boolean; onReview: () => void }) {
-  const latest = state.disclosures.at(-1);
+export function Pipeline({ state, pending, running, focusId, onClearFocus, onReview }: { state: UiState; pending: CardView | null; running: boolean; focusId?: string | null; onClearFocus?: () => void; onReview: () => void }) {
+  const focused = focusId ? state.disclosures.find((d) => d.id === focusId) : undefined;
+  const latest = focused ?? state.disclosures.at(-1);
   const findings = useFindings(pending ? undefined : latest);
 
   let subject: Subject | null = null;
@@ -140,15 +141,20 @@ export function Pipeline({ state, pending, running, onReview }: { state: UiState
     <section aria-label="Disclosure pipeline" className="border border-line bg-canvas">
       <div className="flex h-9 items-center justify-between gap-3 border-b border-line bg-surface px-4">
         <h2 className="label">Sentry pipeline</h2>
-        <span className="font-mono text-[11px] text-faint">
+        <span className="flex items-center gap-2 font-mono text-[11px] text-faint">
           {subject ? (
             <>
-              {subject.mode === "held" ? "live interception" : "last disclosure"} · {fmtTime(subject.at)}
+              {subject.mode === "held" ? <span className="text-accent-ink">live interception</span> : focused ? <span className="text-ink">inspecting {subject.host}</span> : "last disclosure"} · {fmtTime(subject.at)}
             </>
           ) : watching ? (
             "watching the agent"
           ) : (
             "no disclosures yet"
+          )}
+          {focused && !pending && onClearFocus && (
+            <button onClick={onClearFocus} className="border border-line-strong px-1.5 py-px text-ink-2 transition-colors hover:border-ink hover:text-ink">
+              back to latest
+            </button>
           )}
         </span>
       </div>

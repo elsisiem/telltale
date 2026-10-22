@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api, cx, fmtDate, fmtStamp } from "./format";
 import { Paper } from "./Paper";
+import { useToast } from "./Toast";
 import type { DisclosureRow, ReceiptResponse, RequestRow, RequestSummary, UiState } from "./types";
 import { Button, Card, CardHeader, Empty, Icon, OutcomeTag, RiskTag, Tag, TagCode } from "./ui";
 
@@ -12,6 +13,7 @@ const KIND: Record<string, string> = {
 };
 
 function ReceiptCheck({ disclosureId }: { disclosureId: string }) {
+  const toast = useToast();
   const [res, setRes] = useState<ReceiptResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -21,7 +23,9 @@ function ReceiptCheck({ disclosureId }: { disclosureId: string }) {
     setBusy(true);
     setErr(null);
     try {
-      setRes(await api<ReceiptResponse>(`/api/receipts/${disclosureId}`));
+      const r = await api<ReceiptResponse>(`/api/receipts/${disclosureId}`);
+      setRes(r);
+      toast(r.verified ? "Receipt verified" : "Receipt failed verification", { detail: r.verified ? "Ed25519 signature matches the recorded consent." : "The receipt does not match its signature.", tone: r.verified ? "ok" : "error" });
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -54,6 +58,7 @@ function ReceiptCheck({ disclosureId }: { disclosureId: string }) {
 }
 
 function OptOut({ disc, existing, onChanged }: { disc: DisclosureRow; existing?: RequestSummary; onChanged: () => void }) {
+  const toast = useToast();
   const [sent, setSent] = useState<RequestRow | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -64,7 +69,9 @@ function OptOut({ disc, existing, onChanged }: { disc: DisclosureRow; existing?:
     setBusy(true);
     setErr(null);
     try {
-      setSent(await api<RequestRow>("/api/requests/optout", { json: { disclosureId: disc.id } }));
+      const r = await api<RequestRow>("/api/requests/optout", { json: { disclosureId: disc.id } });
+      setSent(r);
+      toast("Opt-out prepared", { detail: r.channel === "manual" ? `Ready to send. Deadline ${fmtDate(r.due_at)}. The demo persona never emails real companies.` : `Sent from the tagged inbox. Deadline ${fmtDate(r.due_at)}.` });
       onChanged();
     } catch (e) {
       setErr((e as Error).message);
@@ -102,13 +109,13 @@ function OptOut({ disc, existing, onChanged }: { disc: DisclosureRow; existing?:
   );
 }
 
-function Entry({ d, state, onChanged }: { d: DisclosureRow; state: UiState; onChanged: () => void }) {
+function Entry({ d, state, onChanged, focused, onInspect }: { d: DisclosureRow; state: UiState; onChanged: () => void; focused?: boolean; onInspect?: (id: string) => void }) {
   const broker = d.broker_ids.length > 0;
   const names = d.broker_ids.map((id) => state.brokerNames[id] ?? id);
   const optout = state.requests.find((r) => r.kind === "optout" && r.tag_code === d.tag_code);
   const leaked = state.leaks.some((l) => l.disclosure_id === d.id);
   return (
-    <article className={cx("anim-rise border-b border-line px-4 py-3 last:border-0", leaked && "shadow-[inset_2px_0_0_0_var(--color-accent)]")}>
+    <article className={cx("anim-rise border-b border-line px-4 py-3 transition-colors last:border-0", focused && "bg-hover", leaked ? "shadow-[inset_2px_0_0_0_var(--color-accent)]" : focused && "shadow-[inset_2px_0_0_0_var(--color-ink)]")}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate text-[13px] font-semibold text-ink">{d.recipient_host}</h3>
@@ -144,19 +151,24 @@ function Entry({ d, state, onChanged }: { d: DisclosureRow; state: UiState; onCh
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <ReceiptCheck disclosureId={d.id} />
+        {onInspect && (
+          <Button size="sm" variant="ghost" onClick={() => onInspect(d.id)} className={cx(focused && "bg-well text-ink")} title="Show this disclosure in the pipeline">
+            {focused ? "In pipeline" : "Inspect"}
+          </Button>
+        )}
         {broker && <OptOut disc={d} existing={optout} onChanged={onChanged} />}
       </div>
     </article>
   );
 }
 
-export function Ledger({ state, onChanged }: { state: UiState; onChanged: () => void }) {
+export function Ledger({ state, onChanged, focusId, onInspect }: { state: UiState; onChanged: () => void; focusId?: string | null; onInspect?: (id: string) => void }) {
   const discs = [...state.disclosures].reverse();
   return (
     <Card className="flex h-full min-h-0 flex-col">
       <CardHeader title="Ledger" meta={<span className="font-mono text-[10.5px] text-faint">{discs.length} signed receipts</span>} />
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {discs.length === 0 ? <Empty className="m-3">Each disclosure gets a tag and an Ed25519-signed consent receipt.</Empty> : discs.map((d) => <Entry key={d.id} d={d} state={state} onChanged={onChanged} />)}
+        {discs.length === 0 ? <Empty className="m-3">Each disclosure gets a tag and an Ed25519-signed consent receipt.</Empty> : discs.map((d) => <Entry key={d.id} d={d} state={state} onChanged={onChanged} focused={focusId === d.id} onInspect={onInspect} />)}
       </div>
     </Card>
   );
