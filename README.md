@@ -49,7 +49,7 @@ pnpm daylight                # live sweep of all 603 brokers (~1 min)
 
 | Integration | With key | Without key |
 |---|---|---|
-| Claude (`ANTHROPIC_API_KEY`) | Live agent, Claude Opus 5.5 with server-side refusal fallback | Consent preview and every other screen still work |
+| Claude (`ANTHROPIC_API_KEY`) | Live agent, Claude Sonnet 5.5 (medium effort) with server-side refusal fallback | Consent preview and every other screen still work |
 | AgentMail | One real inbox per recipient; incoming mail is attributed automatically | Plus-addressing on the person's email |
 | Kernel | Hosted browser with an embeddable live view | Local Chromium window |
 | Exa | Company lookup for unknown brand domains | Registry domains and names only |

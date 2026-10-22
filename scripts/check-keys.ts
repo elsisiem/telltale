@@ -11,7 +11,7 @@ async function check(name: string, fn: () => Promise<string>) {
   await check("anthropic", async () => {
     const { default: Anthropic } = await import("@anthropic-ai/sdk");
     const ws = process.env.ANTHROPIC_WORKSPACE_ID;
-    const r = await new Anthropic(ws ? { defaultHeaders: { "anthropic-workspace-id": ws } } : {}).messages.create({ model: process.env.TELLTALE_MODEL ?? "claude-opus-5-5", max_tokens: 64, output_config: { effort: "low" }, messages: [{ role: "user", content: "Reply with the word ready." }] });
+    const r = await new Anthropic(ws ? { defaultHeaders: { "anthropic-workspace-id": ws } } : {}).messages.create({ model: process.env.TELLTALE_MODEL ?? "claude-sonnet-5-5", max_tokens: 64, output_config: { effort: "low" }, messages: [{ role: "user", content: "Reply with the word ready." }] });
     return `${r.model} → ${r.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("").trim()}`;
   });
   await check("agentmail", async () => {

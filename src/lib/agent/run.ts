@@ -10,7 +10,7 @@ import { openBrowser, snapshot, type BrowserSession } from "./browser";
 // The personal agent. It browses and fills forms for the person, but it never holds their
 // details: it describes each field by kind, and Telltale's gate decides and types the values.
 
-const MODEL = process.env.TELLTALE_MODEL ?? "claude-opus-5-5";
+const MODEL = process.env.TELLTALE_MODEL ?? "claude-sonnet-5-5";
 const MAX_TURNS = 25;
 
 const KINDS = [

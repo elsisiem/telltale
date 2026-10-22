@@ -1,14 +1,14 @@
 # Telltale on Fly.io. One always-on machine: pending consent cards and the live event stream live
 # in that process's memory, so the app must not scale out or sleep mid-demo.
 app = "telltale-app"
-primary_region = "sjc"
+primary_region = "ord"
 
 [build]
   dockerfile = "Dockerfile"
 
 [env]
   PORT = "3000"
-  TELLTALE_MODEL = "claude-opus-5-5"
+  TELLTALE_MODEL = "claude-sonnet-5-5"
 
 [http_service]
   internal_port = 3000
