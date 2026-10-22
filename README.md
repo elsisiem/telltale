@@ -51,9 +51,24 @@ pnpm daylight                # live sweep of all 603 brokers (~1 min)
 |---|---|---|
 | Claude (`ANTHROPIC_API_KEY`) | Live agent, Claude Sonnet 5.5 (medium effort) with server-side refusal fallback | Consent preview and every other screen still work |
 | AgentMail | One real inbox per recipient; incoming mail is attributed automatically | Plus-addressing on the person's email |
-| Kernel | Hosted browser with an embeddable live view | Local Chromium window |
+| Kernel | Hosted browser. Sites that crash Kernel's browser are remembered and reopened in the bundled Chromium | Local Chromium window |
 | Exa | Company lookup for unknown brand domains | Registry domains and names only |
 | Neon (`DATABASE_URL`) | Postgres | Embedded PGlite in `.telltale/db` |
+
+## Deployed
+
+Telltale runs at **https://telltale-app.fly.dev**: one always-on Fly.io machine in Chicago (`ord`), next to its Neon Postgres in AWS us-east-2. It is behind HTTP Basic auth (user `telltale`); only the fictional demo pages under `/demo/` are public, so a cloud browser can load them.
+
+```bash
+fly deploy --remote-only --ha=false     # builds the Docker image on Fly; no local Docker needed
+fly secrets import < secrets.env         # ANTHROPIC_*, AGENTMAIL_API_KEY, KERNEL_API_KEY, EXA_API_KEY,
+                                         # DATABASE_URL, TELLTALE_PASSWORD, TELLTALE_RECEIPT_KEY
+```
+
+- **One machine on purpose.** Pending consent cards and the live event stream live in that process's memory, so the app never scales out and never sleeps.
+- **Receipt key as a secret.** The Ed25519 receipt key is supplied as `TELLTALE_RECEIPT_KEY` (base64 PEM), so receipts verify across restarts.
+- **Every agent run streams screenshots to the console,** whichever browser it uses.
+- **Cloud sweeps see more bot walls than home connections.** Each broker therefore keeps its last *conclusive* result (hidden or visible), and the board says how many results were carried over.
 
 ## Architecture
 

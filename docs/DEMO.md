@@ -1,10 +1,11 @@
 # Telltale: 3-minute demo script
 
 Setup before going on stage:
-- Run `pnpm dev`, open `http://localhost:3000`, and press **d** once to confirm the stage panel opens.
-- Press **Reset demo** in the stage panel.
+- Open **https://telltale-app.fly.dev** and sign in (user `telltale`, password from `.env.local`). Press **d** once to confirm the stage panel opens.
+- Press **Reset demo** in the stage panel. This clears earlier runs and frees Telltale's own AgentMail inboxes.
+- **Warm-up:** run the car-insurance preset once before going on stage. If Kernel's browser crashes on that site, Telltale remembers it and goes straight to its bundled browser next time, which saves about 15 seconds.
 - Have `/daylight` open in a second tab.
-- Optional: with a Kernel key, the live browser view embeds in the console. Without one, a local Chromium window opens; put it beside the console.
+- The agent's browser shows in the console as a live screenshot stream; no extra window is needed.
 
 ## 0:00–0:20 · The hook
 
@@ -34,6 +35,11 @@ On `/daylight`, press **Run sweep**. 603 tiles fill in as the sweep runs, which 
 2. Stage panel (**d**) → **Replay Day 47 (simulated)**. A red edge draws out to Northgate Lead Exchange.
    > "Day 47, simulated with a fictional sender. Someone writes to the tagged address that only this broker ever received, after the opt-out deadline. That's no longer a hunch. That's evidence."
 3. **Draft complaint** opens the exhibit: timeline, signed receipt, deadline, the broker's own filing, stamped SIMULATION.
+
+**Optional live moment with a real email (about 20 seconds):** read out the dental office's tagged address from the ledger (`maya.xxxx@agentmail.to`) and ask a judge to email it from their phone.
+> "That address went to exactly one place: a dental office. You're not the dental office."
+
+Within about 10 seconds the console shows a red leak edge to the judge's email domain. This is real mail, attributed live. The dental office is fictional, so no real company is implicated.
 
 ## 2:40–3:00 · Close
 

@@ -3,6 +3,9 @@
 const MULTI_PART_SUFFIXES = new Set([
   "co.uk", "org.uk", "ac.uk", "gov.uk", "com.au", "net.au", "org.au", "co.nz", "co.jp",
   "co.in", "com.br", "com.mx", "co.za", "com.sg", "com.cn", "com.hk", "co.il", "co.kr",
+  // Hosting platforms where every subdomain is a different site (private public suffixes).
+  "fly.dev", "vercel.app", "netlify.app", "github.io", "herokuapp.com", "pages.dev", "workers.dev",
+  "onrender.com", "web.app", "firebaseapp.com", "azurewebsites.net", "appspot.com",
 ]);
 
 // Domains that host privacy portals or forms for many companies. A broker listing one of
