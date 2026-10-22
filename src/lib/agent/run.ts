@@ -99,6 +99,7 @@ const tools: Anthropic.Beta.BetaTool[] = [
 // With the synthetic stage persona, never submit contact details to a real business.
 const dryRun = () => process.env.TELLTALE_DRY_RUN === "1" || (process.env.TELLTALE_DRY_RUN !== "0" && loadProfile().synthetic === true);
 const SUBMIT_RE = /submit|get (my )?(free )?quotes?|see (my )?(rates|quotes)|sign ?up|create|register|send|request|finish|complete|view (my )?(rates|results)|continue|next/i;
+const LOCAL_URL = /(localhost|127\.0\.0\.1)(:\d+)?/;
 const CONTACT_KINDS = new Set<FieldKind>(["email", "phone", "fullName", "firstName", "lastName", "street"]);
 const contactSharedOn = new Set<string>();
 
@@ -153,7 +154,9 @@ export async function execute(session: BrowserSession, runId: string, name: stri
     case "click": {
       const { selector } = z.object({ selector: z.string() }).parse(input);
       const loc = page.locator(selector).first();
-      if (dryRun() && contactSharedOn.has(new URL(page.url()).host)) {
+      const host = new URL(page.url()).host;
+      // The fictional demo pages served by this app are not real businesses, so submitting is fine.
+      if (dryRun() && !LOCAL_URL.test(host) && contactSharedOn.has(host)) {
         const label = ((await loc.textContent().catch(() => "")) ?? "") + " " + ((await loc.getAttribute("value").catch(() => "")) ?? "");
         if (SUBMIT_RE.test(label)) {
           return { text: "Dry run: Telltale stopped here so the demo persona's contact details are not submitted to a real company. Call finish and tell the person the form is filled and ready to submit." };
@@ -174,8 +177,10 @@ export async function execute(session: BrowserSession, runId: string, name: stri
 
 export async function runAgent(task: string, opts: { runId?: string } = {}): Promise<{ runId: string; summary: string }> {
   const runId = opts.runId ?? crypto.randomUUID();
-  const client = new Anthropic();
-  const session = await openBrowser();
+  const workspace = process.env.ANTHROPIC_WORKSPACE_ID?.trim();
+  // Keys not scoped to a workspace must name one on every request.
+  const client = new Anthropic(workspace ? { defaultHeaders: { "anthropic-workspace-id": workspace } } : {});
+  const session = await openBrowser({ local: LOCAL_URL.test(task) });
   emit({ type: "agent.browser", runId, liveViewUrl: session.liveViewUrl });
   const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: "user", content: task }];
   let summary = "Stopped without finishing.";

@@ -86,9 +86,10 @@ create table if not exists scan_results (
 let dbPromise: Promise<Db> | null = null;
 
 async function open(): Promise<Db> {
-  if (process.env.DATABASE_URL) {
+  const url = process.env.DATABASE_URL?.trim();
+  if (url) {
     const { Pool } = await import("@neondatabase/serverless");
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const pool = new Pool({ connectionString: url });
     const db: Db = { query: (sql, params) => pool.query(sql, params) as never };
     await db.query(SCHEMA);
     return db;

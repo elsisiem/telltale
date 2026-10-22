@@ -9,8 +9,9 @@ export type BrowserSession = {
   close(): Promise<void>;
 };
 
-export async function openBrowser(): Promise<BrowserSession> {
-  if (process.env.KERNEL_API_KEY) {
+/** `local` forces a local window, e.g. for this app's own demo pages, which a cloud browser can't reach. */
+export async function openBrowser(opts: { local?: boolean } = {}): Promise<BrowserSession> {
+  if (process.env.KERNEL_API_KEY && !opts.local) {
     const { default: Kernel } = await import("@onkernel/sdk");
     const kernel = new Kernel();
     const kb = await kernel.browsers.create({ headless: false, stealth: true, timeout_seconds: 600 });
