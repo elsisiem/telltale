@@ -66,7 +66,7 @@ export function Guide({ open, onClose }: { open: boolean; onClose: () => void })
               <dt>
                 <TagCode code="K7Q2" accent />
               </dt>
-              <dd>A tag. Each disclosure gets one, so any copy of your data says where it came from.</dd>
+              <dd>A tag. Each disclosure gets one, so any copy of your data says where it came from. The Identities page lists every site&apos;s version of you.</dd>
               <dt>
                 <Tag tone="accent">Tagged</Tag>
               </dt>

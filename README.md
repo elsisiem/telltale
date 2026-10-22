@@ -84,7 +84,7 @@ The last row is the reason for the demo. A car insurance comparison site looks l
 
 - **Sentry pipeline.** A live view of each disclosure moving through intercept, inspect, sanitize and release.
 - **Consent cards** that quote the recipient's own filing, with the data's limitations one click away.
-- **Tagged identities.** One real AgentMail inbox per recipient, an `Attn` address line and a variant middle initial. Mail still arrives.
+- **Tagged identities.** One real AgentMail inbox per recipient, an `Attn` address line and a variant middle initial. Mail still arrives. The Identities page shows each site's version of you next to the real one, with its inbox and the mail it received.
 - **Signed consent receipts** aligned with ISO/IEC TS 27560, verifiable from the ledger.
 - **Opt-out and deletion letters** with deadlines tracked under 11 CCR §7026 and §7021.
 - **Leak attribution** from inbound mail, with an evidence page and a complaint draft.
@@ -165,6 +165,7 @@ fly deploy --remote-only --ha=false              # builds the image on Fly; no l
 | `/` | Overview | Public |
 | `/tour` | Animated walkthrough of one disclosure | Public |
 | `/console` | Agent, pipeline, data trail, ledger | Password |
+| `/identities` | Every site's version of you next to your real details, its watched inbox and its mail | Password |
 | `/daylight` | Broker opt-out page sweep | Password |
 | `/evidence/:id` | Exhibit and complaint draft for a traced leak | Password |
 | `/profile` | Encrypted details and dry-run setting | Password |

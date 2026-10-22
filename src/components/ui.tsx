@@ -143,10 +143,18 @@ export function Spinner() {
 
 const ICON = { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: 1.4 } as const;
 
-export type IconName = "tour" | "close" | "console" | "daylight" | "evidence" | "profile" | "chevron" | "external" | "collapse" | "check" | "arrow" | "expand" | "help";
+export type IconName = "identities" | "tour" | "close" | "console" | "daylight" | "evidence" | "profile" | "chevron" | "external" | "collapse" | "check" | "arrow" | "expand" | "help";
 
 export function Icon({ name, className }: { name: IconName; className?: string }) {
   switch (name) {
+    case "identities":
+      return (
+        <svg {...ICON} className={className} aria-hidden>
+          <rect x="2.5" y="3.5" width="7" height="9" />
+          <rect x="6.5" y="5.5" width="7" height="9" />
+          <path d="M8.5 9h3M8.5 11.5h2" />
+        </svg>
+      );
     case "tour":
       return (
         <svg {...ICON} className={className} aria-hidden>

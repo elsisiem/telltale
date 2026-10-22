@@ -10,7 +10,7 @@ import { ThemeToggle } from "./Theme";
 import type { UiState } from "./types";
 import { Button, Icon, Indicator, Tag, type IconName } from "./ui";
 
-type NavKey = "console" | "daylight" | "evidence" | "profile";
+type NavKey = "console" | "identities" | "daylight" | "evidence" | "profile";
 
 const SIDEBAR_KEY = "telltale:sidebar-collapsed";
 
@@ -144,6 +144,7 @@ function Sidebar({ active, state, connected }: { active: NavKey; state: UiState 
         {!collapsed && <div className="label mb-1.5 px-3">Workspace</div>}
         <NavItem href="/console" icon="console" label="Console" active={active === "console"} collapsed={collapsed} />
         <NavItem href="/tour" icon="tour" label="Tour" active={false} collapsed={collapsed} hint="7 steps" />
+        <NavItem href="/identities" icon="identities" label="Identities" active={active === "identities"} collapsed={collapsed} hint={state ? String(state.disclosures.length) : undefined} />
         <NavItem
           href="/daylight"
           icon="daylight"

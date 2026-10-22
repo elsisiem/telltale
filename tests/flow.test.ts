@@ -119,3 +119,21 @@ describe("end-to-end: disclose → opt out → leak → complaint", () => {
     bus.off("event", onEvent);
   });
 });
+
+describe("identities", () => {
+  it("shows each site's version of the person next to the real one, with its mail and leaks", async () => {
+    const { listIdentities } = await import("@/lib/identities");
+    const ids = await listIdentities();
+    const broker = ids.find((i) => i.host === "rocketreach.co")!;
+    expect(broker.brokers[0]).toBe("RocketReach LLC");
+    expect(broker.inbox).toMatch(/^maya\.[a-z2-9]{4}@agentmail\.to$/);
+    expect(broker.inboxKind).toBe("agentmail");
+    const email = broker.fields.find((f) => f.kind === "email")!;
+    expect(email.real).toBe("maya.okafor.demo@example.com");
+    expect(email.sent).toBe(broker.inbox);
+    expect(broker.fields.find((f) => f.kind === "phone")!.sent).toBe("");
+    expect(broker.messages.map((m) => m.classification)).toEqual(["first-party", "leak"]);
+    expect(broker.leakIds).toHaveLength(1);
+    expect(broker.optOut?.dueAt?.slice(0, 10)).toBe("2026-11-12");
+  });
+});

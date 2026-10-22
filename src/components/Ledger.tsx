@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { api, cx, fmtDate, fmtStamp } from "./format";
 import { Paper } from "./Paper";
@@ -141,12 +142,14 @@ function Entry({ d, state, onChanged, focused, onInspect }: { d: DisclosureRow; 
         ))}
       </dl>
 
-      <div className="mt-2.5 flex items-center gap-2 border border-line bg-well px-2 py-1.5">
+      <div className="mt-2.5 flex items-center gap-2 border border-line bg-well px-2 py-1.5" title={`Given ${fmtStamp(d.created_at)}`}>
         <TagCode code={d.tag_code} size="sm" accent={broker} />
         <span className="min-w-0 truncate font-mono text-[11.5px] text-ink" title={d.alias_email ?? undefined}>
           {d.alias_email ?? <span className="text-faint">no email given</span>}
         </span>
-        <span className="ml-auto shrink-0 font-mono text-[10px] text-faint">{fmtStamp(d.created_at).slice(5)}</span>
+        <Link href={`/identities#${d.tag_code}`} className="ml-auto shrink-0 font-mono text-[10.5px] text-ink-2 underline decoration-line-strong underline-offset-2 hover:text-ink hover:decoration-ink" title="See what this site received, next to your real details">
+          identity
+        </Link>
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
