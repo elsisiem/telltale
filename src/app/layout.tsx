@@ -1,26 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
+const mono = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"], display: "swap", weight: ["400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
   title: "Telltale",
-  description: "Your agent's data, watermarked.",
+  description: "A consent layer for personal agents: know who gets your data, mark it, make them answer for it.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-ink text-fg`}>{children}</body>
+    <html lang="en" className={`${inter.variable} ${mono.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }

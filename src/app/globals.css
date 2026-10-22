@@ -1,69 +1,178 @@
 @import "tailwindcss";
 
-/* Telltale "evidence locker" palette. One accent family: signal amber for tags, alarm red for
-   brokers / leaks / violations, pass green for silent passes and verified signatures. */
+/* Telltale design system.
+   Light, precise, monochrome. One vivid accent (international orange) marks anything that was
+   intercepted, is risky, or needs the person's decision. Everything else is ink and slate. */
 @theme {
-  --color-ink: #0b0d10;
-  --color-panel: #12151a;
-  --color-panel-2: #171b21;
-  --color-line: #222831;
-  --color-line-2: #2e3641;
-  --color-fg: #e8eaed;
-  --color-muted: #8a93a0;
-  --color-dim: #5c6570;
-  --color-signal: #f5a524;
-  --color-alarm: #ff4d4f;
-  --color-pass: #3dd68c;
-  --color-paper: #f4f1ea;
-  --color-paper-ink: #1d1b17;
-  --color-paper-line: #d9d3c5;
+  --color-canvas: #f8f9fa;
+  --color-surface: #ffffff;
+  --color-well: #f3f4f6;
+  --color-hover: #f9fafb;
+  --color-line: #e5e7eb;
+  --color-line-strong: #d1d5db;
+  --color-ink: #111318;
+  --color-ink-2: #374151;
+  --color-muted: #6b7280;
+  --color-faint: #9ca3af;
+  --color-accent: #ff4f00;
+  --color-accent-ink: #d63f00;
+  --color-accent-wash: #fff5ef;
+  --color-paper: #fffdf8;
+  --color-paper-ink: #1f1d1a;
+  --color-paper-line: #e7e2d6;
 
-  --font-serif: "Iowan Old Style", "Charter", "Bitstream Charter", "Sitka Text", Cambria, Georgia, "Times New Roman", serif;
+  --font-serif: "Iowan Old Style", "Charter", "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), "JetBrains Mono", "SF Mono", ui-monospace, "Cascadia Mono", monospace;
 }
 
-:root {
-  color-scheme: dark;
+/* Global typography. Body copy, descriptions and text inputs are Inter; headings, labels,
+   buttons, status and data are JetBrains Mono. Set here so every page inherits it. */
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  html {
+    font-family: var(--font-sans);
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01";
+  }
+  body {
+    background: var(--color-canvas);
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  label,
+  legend,
+  th,
+  button,
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.01em;
+  }
+  input,
+  textarea,
+  select {
+    font-family: var(--font-sans);
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
 }
 
-html,
-body {
-  background: var(--color-ink);
-  color: var(--color-fg);
+@layer components {
+  /* Square status tag: mono, 1px border, no fill. Never a pill. */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    height: 20px;
+    padding: 0 6px;
+    border: 1px solid var(--color-line-strong);
+    border-radius: 2px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-ink-2);
+    white-space: nowrap;
+  }
+  .tag-accent {
+    border-color: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+  .tag-ink {
+    border-color: var(--color-ink);
+    color: var(--color-ink);
+  }
+  .tag-muted {
+    border-color: var(--color-line);
+    color: var(--color-faint);
+  }
+
+  /* Section and field labels. */
+  .label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border: 1px solid var(--color-line-strong);
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--color-muted);
+    background: var(--color-surface);
+  }
+
+  /* Legal documents: a sheet of paper on the desk, with a second sheet behind it. */
+  .paper {
+    position: relative;
+    background: var(--color-paper);
+    color: var(--color-paper-ink);
+    font-family: var(--font-serif);
+    border: 1px solid var(--color-paper-line);
+    box-shadow: 4px 4px 0 -1px var(--color-paper), 4px 4px 0 0 var(--color-paper-line);
+  }
+
+  /* Diagonal hatch used for "blocked" states. */
+  .hatch {
+    background-image: repeating-linear-gradient(135deg, var(--color-muted) 0 1.5px, transparent 1.5px 4px);
+  }
 }
 
-body {
-  font-family: var(--font-sans);
-  font-size: 15px;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-}
-
-::selection {
-  background: color-mix(in srgb, var(--color-signal) 35%, transparent);
-}
-
-/* Thin, quiet scrollbars so the panels read as one surface. */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #2e3641 transparent;
-}
-
-@keyframes slide-up {
+@keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(24px) scale(0.985);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
     transform: none;
   }
 }
-@keyframes fade-in {
+@keyframes fade {
   from {
     opacity: 0;
   }
@@ -71,28 +180,23 @@ body {
     opacity: 1;
   }
 }
-@keyframes row-in {
+@keyframes scan {
   from {
-    opacity: 0;
-    transform: translateY(6px);
+    transform: translateX(-100%);
   }
   to {
-    opacity: 1;
-    transform: none;
+    transform: translateX(400%);
   }
 }
-@keyframes pulse-ring {
-  0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-alarm) 55%, transparent);
-  }
-  100% {
-    box-shadow: 0 0 0 10px transparent;
+@keyframes blink {
+  50% {
+    opacity: 0.25;
   }
 }
-@keyframes tile-in {
+@keyframes tile {
   from {
-    transform: scale(0.4);
-    opacity: 0.2;
+    transform: scale(0.5);
+    opacity: 0;
   }
   to {
     transform: none;
@@ -100,39 +204,39 @@ body {
   }
 }
 
-.anim-slide-up {
-  animation: slide-up 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+.anim-rise {
+  animation: rise 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
-.anim-fade-in {
-  animation: fade-in 240ms ease-out both;
+.anim-fade {
+  animation: fade 200ms ease-out both;
 }
-.anim-row-in {
-  animation: row-in 260ms ease-out both;
+.anim-blink {
+  animation: blink 1.2s steps(2, jump-none) infinite;
 }
-.anim-pulse {
-  animation: pulse-ring 1.6s ease-out infinite;
+.anim-tile {
+  animation: tile 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
-.anim-tile-in {
-  animation: tile-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+/* A thin bar that sweeps across a container while work is in progress. */
+.scanline {
+  position: relative;
+  overflow: hidden;
+}
+.scanline::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 25%;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-accent) 14%, transparent), transparent);
+  animation: scan 1.6s linear infinite;
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .anim-slide-up,
-  .anim-fade-in,
-  .anim-row-in,
-  .anim-pulse,
-  .anim-tile-in {
+  .anim-rise,
+  .anim-fade,
+  .anim-blink,
+  .anim-tile,
+  .scanline::after {
     animation: none;
   }
-}
-
-/* The "exhibit" paper used for legal documents. */
-.paper {
-  background: var(--color-paper);
-  color: var(--color-paper-ink);
-  font-family: var(--font-serif);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.6) inset,
-    0 24px 60px -20px rgba(0, 0, 0, 0.7),
-    0 2px 6px rgba(0, 0, 0, 0.4);
 }

@@ -3,22 +3,21 @@
 import { useState } from "react";
 import { api } from "./format";
 import type { CardView } from "./types";
-import { Button } from "./ui";
+import { Button, Icon } from "./ui";
 
-const PREVIEW_SUGGESTIONS = ["https://rocketreach.co/signup", "https://www.spokeo.com/signup", "https://www.bayviewdental.example/book"];
+const PREVIEW_SUGGESTIONS = ["https://www.bestautoinsurance.com", "https://www.spokeo.com/signup", "https://www.uplead.com", "https://rocketreach.co/signup"];
 
 export function StagePanel({ open, onClose, onPreview, onRefresh }: { open: boolean; onClose: () => void; onPreview: (v: CardView) => void; onRefresh: () => void }) {
   const [url, setUrl] = useState(PREVIEW_SUGGESTIONS[0]);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
 
-  async function replay() {
-    setBusy("replay");
+  async function act(key: string, fn: () => Promise<string | void>) {
+    setBusy(key);
     setMsg(null);
     try {
-      const r = await api<{ classification: string; day: number; leakId?: string }>("/api/demo/replay", { json: {} });
-      setMsg({ tone: "ok", text: `Replayed Day ${r.day}: ${r.classification}${r.leakId ? " · leak traced" : ""}` });
-      onRefresh();
+      const text = await fn();
+      if (text) setMsg({ tone: "ok", text });
     } catch (e) {
       setMsg({ tone: "err", text: (e as Error).message });
     } finally {
@@ -26,64 +25,82 @@ export function StagePanel({ open, onClose, onPreview, onRefresh }: { open: bool
     }
   }
 
-  async function preview() {
-    setBusy("preview");
-    setMsg(null);
-    try {
+  const replay = () =>
+    act("replay", async () => {
+      const r = await api<{ classification: string; day: number; leakId?: string }>("/api/demo/replay", { json: {} });
+      onRefresh();
+      return `Replayed day ${r.day}: ${r.classification}${r.leakId ? " · leak traced" : ""}`;
+    });
+  const preview = () =>
+    act("preview", async () => {
       onPreview(await api<CardView>("/api/preview", { json: { url } }));
       onClose();
-    } catch (e) {
-      setMsg({ tone: "err", text: (e as Error).message });
-    } finally {
-      setBusy(null);
-    }
-  }
+    });
+  const reset = () =>
+    act("reset", async () => {
+      const r = await api<{ inboxesDeleted?: number }>("/api/demo/reset", { method: "POST" });
+      try {
+        sessionStorage.removeItem("telltale:agent-log");
+      } catch {}
+      onRefresh();
+      return `Cleared${r.inboxesDeleted ? ` · ${r.inboxesDeleted} Telltale inbox${r.inboxesDeleted === 1 ? "" : "es"} removed` : ""}`;
+    });
 
   if (!open) return null;
   return (
-    <aside className="anim-slide-up fixed bottom-12 right-6 z-40 w-[380px] rounded-xl border border-line-2 bg-panel-2 p-4 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9)]" aria-label="Stage controls">
-      <div className="mb-3 flex items-center justify-between">
-        <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted">Stage controls</span>
-        <button onClick={onClose} className="rounded px-1.5 text-muted hover:text-fg" aria-label="Close stage controls">
-          ✕
-        </button>
+    <aside className="anim-rise fixed bottom-5 right-5 z-40 w-[360px] border border-ink bg-surface shadow-[0_16px_40px_-20px_rgba(17,19,24,0.4)]" aria-label="Stage controls">
+      <div className="flex h-9 items-center justify-between border-b border-line px-3">
+        <span className="label">Stage controls</span>
+        <span className="flex items-center gap-2">
+          <span className="kbd">D</span>
+          <button onClick={onClose} className="p-1 text-muted hover:text-ink" aria-label="Close stage controls">
+            <Icon name="close" />
+          </button>
+        </span>
       </div>
 
-      <Button variant="secondary" className="w-full border-signal/40 text-signal" onClick={replay} busy={busy === "replay"}>
-        Replay Day 47 (simulated)
-      </Button>
-      <p className="mt-1.5 text-[12px] text-dim">Fictional sender northgate-leads.example. Everything it produces is labeled SIMULATED.</p>
+      <div className="p-3">
+        <Button variant="secondary" className="w-full border-accent text-accent-ink hover:border-accent-ink" onClick={replay} busy={busy === "replay"}>
+          Replay day 47 (simulated)
+        </Button>
+        <p className="mt-1.5 text-[11.5px] text-muted">Fictional sender northgate-leads.example. Everything it produces is labeled SIMULATED.</p>
+      </div>
 
-      <div className="mt-4 border-t border-line pt-4">
-        <label className="text-[13px] text-muted" htmlFor="preview-url">
-          Preview a site (read-only consent card)
+      <div className="border-t border-line p-3">
+        <label className="label" htmlFor="preview-url">
+          Preview a site
         </label>
-        <div className="mt-1.5 flex gap-2">
+        <div className="mt-1.5 flex gap-1.5">
           <input
             id="preview-url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && preview()}
-            className="h-10 min-w-0 flex-1 rounded-lg border border-line bg-ink px-3 font-mono text-[13px] text-fg focus:border-line-2 focus:outline-none"
+            className="h-9 min-w-0 flex-1 border border-line-strong bg-surface px-2.5 font-mono text-[12px] text-ink focus:border-ink focus:outline-none"
           />
           <Button onClick={preview} busy={busy === "preview"}>
             Preview
           </Button>
         </div>
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="mt-2 flex flex-wrap gap-1">
           {PREVIEW_SUGGESTIONS.map((s) => (
-            <button key={s} onClick={() => setUrl(s)} className="rounded-full border border-line px-2 py-0.5 font-mono text-[11px] text-muted hover:text-fg">
+            <button key={s} onClick={() => setUrl(s)} className="h-6 border border-line px-1.5 font-mono text-[10.5px] text-muted transition-colors hover:border-ink hover:text-ink">
               {s.replace(/^https?:\/\/(www\.)?/, "").split("/")[0]}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-line pt-3">
-        <Button size="sm" variant="ghost" onClick={onRefresh}>
-          Refresh
-        </Button>
-        {msg && <span className={msg.tone === "ok" ? "text-[12px] text-pass" : "text-[12px] text-alarm"}>{msg.text}</span>}
+      <div className="flex items-center justify-between gap-2 border-t border-line px-3 py-2">
+        <div className="flex gap-1">
+          <Button size="sm" variant="ghost" onClick={onRefresh}>
+            Refresh
+          </Button>
+          <Button size="sm" variant="ghost" onClick={reset} busy={busy === "reset"}>
+            Reset demo
+          </Button>
+        </div>
+        {msg && <span className={msg.tone === "ok" ? "truncate font-mono text-[11px] text-ink-2" : "truncate text-[11.5px] text-accent-ink"}>{msg.text}</span>}
       </div>
     </aside>
   );

@@ -24,7 +24,7 @@ On `/daylight`, press **Run sweep**. 603 tiles fill in as the sweep runs, which 
    > "An ordinary site. Telltale stays out of the way. Notice the email is a tagged alias." (Point at the green edge and the amber tag code.)
 2. Preset **"Get car insurance quotes…"** → Run. The agent opens bestautoinsurance.com and the **consent card** takes over the screen.
    > "Before a single field is typed: registered broker, quoted from its own filing. And I choose per field. Email gets a tagged alias, phone is withheld, ZIP only."
-   Press **Share with these choices.**
+   Press **Release with these choices.**
 3. In the ledger, press **Verify receipt** and get "Signature valid · Ed25519".
    > "Two things you can't see. Claude never saw Maya's details: it asked for an email field, and Telltale filled it. And because Maya is a synthetic persona, Telltale stopped before submitting to a real company."
 
@@ -32,7 +32,7 @@ On `/daylight`, press **Run sweep**. 603 tiles fill in as the sweep runs, which 
 
 1. Press **Send opt-out** on the broker card. The deadline appears: 15 business days.
    > "I keep the service, but I've told them they may not sell it."
-2. Stage panel (**d**) → **Replay Day 47 (simulated)**. A red edge draws out to Northgate Lead Exchange.
+2. Stage panel (**d**) → **Replay day 47 (simulated)**. An orange dashed edge draws out to Northgate Lead Exchange.
    > "Day 47, simulated with a fictional sender. Someone writes to the tagged address that only this broker ever received, after the opt-out deadline. That's no longer a hunch. That's evidence."
 3. **Draft complaint** opens the exhibit: timeline, signed receipt, deadline, the broker's own filing, stamped SIMULATION.
 

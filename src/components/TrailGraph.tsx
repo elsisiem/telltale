@@ -3,94 +3,82 @@
 import type { UiState } from "./types";
 
 const C = {
-  fg: "#E8EAED",
-  muted: "#8A93A0",
-  dim: "#5C6570",
-  signal: "#F5A524",
-  alarm: "#FF4D4F",
-  pass: "#3DD68C",
-  panel: "#12151A",
-  ink: "#0B0D10",
+  ink: "#111318",
+  ink2: "#374151",
+  muted: "#6B7280",
+  faint: "#9CA3AF",
+  line: "#E5E7EB",
+  lineStrong: "#D1D5DB",
+  accent: "#FF4F00",
+  accentInk: "#D63F00",
+  surface: "#FFFFFF",
+  wash: "#FFF5EF",
 };
 
-// Geometry in viewBox units; the SVG scales to the column width (~1:1 at 1440px).
-const W = 620;
-const X_YOU = 56;
-const X_RECIP = 292;
-const X_THIRD = 516;
-const ROW = 120;
-const TOP = 70;
-const BOTTOM = 92;
-const MONO = { fontFamily: "var(--font-geist-mono), ui-monospace, monospace" };
+// viewBox units; the SVG scales to the card width.
+const W = 520;
+const X_YOU = 44;
+const X_RECIP = 250;
+const X_THIRD = 430;
+const ROW = 78;
+const TOP = 56;
+const BOTTOM = 40;
+const NODE = 30;
+const MONO = { fontFamily: "var(--font-mono)" };
 
-function truncate(s: string, n: number) {
-  return s.length > n ? `${s.slice(0, n - 1)}…` : s;
-}
-
+const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 const shortHost = (h: string) => h.replace(/^www\./, "");
 
-/** Point on the You→recipient cubic (controls at the horizontal midpoint) at parameter t. */
-function onEdge(t: number, x0: number, y0: number, x3: number, y3: number) {
-  const mx = (x0 + x3) / 2;
-  const u = 1 - t;
-  const x = u ** 3 * x0 + 3 * u * u * t * mx + 3 * u * t * t * mx + t ** 3 * x3;
-  const y = (u ** 3 + 3 * u * u * t) * y0 + (3 * u * t * t + t ** 3) * y3;
-  return { x, y };
-}
-
-/** Where the person's data went: You → each recipient (tag chip on the edge) → wherever it resurfaced. */
+/** Where the person's data went: You → each recipient (tag on the edge) → wherever it resurfaced. */
 export function TrailGraph({ state }: { state: UiState }) {
   const discs = state.disclosures;
   const n = Math.max(discs.length, 1);
-  const H = Math.max(260, (n - 1) * ROW + TOP + BOTTOM);
-  const span = H - TOP - BOTTOM;
+  const H = Math.max(200, (n - 1) * ROW + TOP + BOTTOM + 24);
+  const span = H - TOP - BOTTOM - 24;
   const yFor = (i: number) => (discs.length <= 1 ? TOP + span / 2 : TOP + (i * span) / (discs.length - 1));
   const youY = TOP + span / 2;
   const msgById = new Map(state.messages.map((m) => [m.id, m]));
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 480 }} role="img" aria-label={`Data trail: where ${state.person.firstName}'s data went`}>
+    <svg viewBox={`0 0 ${W} ${H}`} className="block w-full" role="img" aria-label={`Data trail: where ${state.person.firstName}'s data went`}>
       <defs>
-        <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0 0L10 5L0 10z" fill={C.alarm} />
+        <marker id="tt-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0 0L10 5L0 10z" fill={C.accent} />
         </marker>
-        <radialGradient id="you-glow">
-          <stop offset="0%" stopColor={C.signal} stopOpacity="0.28" />
-          <stop offset="100%" stopColor={C.signal} stopOpacity="0" />
-        </radialGradient>
+        <pattern id="tt-grid" width="16" height="16" patternUnits="userSpaceOnUse">
+          <path d="M16 0H0V16" fill="none" stroke={C.line} strokeWidth="0.6" />
+        </pattern>
       </defs>
+      <rect width={W} height={H} fill="url(#tt-grid)" opacity="0.55" />
 
       {[
         [X_YOU, "PERSON"],
         [X_RECIP, "GIVEN TO"],
         [X_THIRD, "SURFACED AT"],
       ].map(([x, label]) => (
-        <text key={label} x={x} y={24} textAnchor="middle" fontSize="11" fill={C.dim} letterSpacing="1.8">
+        <text key={label} x={x} y={22} textAnchor="middle" fontSize="9.5" fill={C.faint} letterSpacing="1.2" style={MONO}>
           {label}
         </text>
       ))}
 
       {discs.length === 0 && (
-        <text x={X_RECIP} y={youY + 5} textAnchor="middle" fontSize="15" fill={C.dim}>
-          No disclosures yet
+        <text x={X_RECIP} y={youY + 4} textAnchor="middle" fontSize="12" fill={C.faint} style={MONO}>
+          no disclosures yet
         </text>
       )}
 
-      {/* You → recipient */}
       {discs.map((d, i) => {
         const y = yFor(i);
         const broker = d.broker_ids.length > 0;
-        const x0 = X_YOU + 30;
-        const x3 = X_RECIP - 27;
+        const x0 = X_YOU + NODE / 2;
+        const x3 = X_RECIP - NODE / 2;
         const mx = (x0 + x3) / 2;
-        const path = `M${x0},${youY} C${mx},${youY} ${mx},${y} ${x3},${y}`;
-        const chip = onEdge(0.42, x0, youY, x3, y);
         return (
           <g key={`e-${d.id}`}>
-            <path d={path} fill="none" stroke={broker ? "#6b2a2d" : "#215a41"} strokeWidth={2.5} />
-            <g transform={`translate(${chip.x},${chip.y})`}>
-              <rect x={-31} y={-13} width={62} height={26} rx={5} fill={C.ink} stroke={C.signal} strokeOpacity={0.7} />
-              <text x={0} y={5} textAnchor="middle" fontSize="14" fontWeight={600} fill={C.signal} letterSpacing="1.5" style={MONO}>
+            <path d={`M${x0},${youY} H${mx - 14} V${y} H${x3}`} fill="none" stroke={broker ? C.accent : C.lineStrong} strokeWidth={broker ? 1.4 : 1.2} />
+            <g transform={`translate(${mx + 40},${y})`}>
+              <rect x={-24} y={-10} width={48} height={20} fill={C.surface} stroke={broker ? C.accent : C.ink} strokeWidth={1} />
+              <text x={0} y={4} textAnchor="middle" fontSize="11" fontWeight={600} fill={broker ? C.accentInk : C.ink} letterSpacing="1.4" style={MONO}>
                 {d.tag_code}
               </text>
             </g>
@@ -98,7 +86,6 @@ export function TrailGraph({ state }: { state: UiState }) {
         );
       })}
 
-      {/* recipient → third party (leak) */}
       {state.leaks.map((l) => {
         const i = discs.findIndex((d) => d.id === l.disclosure_id);
         if (i < 0) return null;
@@ -109,26 +96,25 @@ export function TrailGraph({ state }: { state: UiState }) {
           <g key={`l-${l.id}`}>
             <clipPath id={clipId}>
               <rect x={X_RECIP} y={0} width={0} height={H}>
-                <animate attributeName="width" from="0" to={W - X_RECIP} dur="1.4s" fill="freeze" calcMode="spline" keySplines="0.3 0 0.2 1" keyTimes="0;1" />
+                <animate attributeName="width" from="0" to={W - X_RECIP} dur="1.1s" fill="freeze" calcMode="spline" keySplines="0.3 0 0.2 1" keyTimes="0;1" />
               </rect>
             </clipPath>
             <g clipPath={`url(#${clipId})`}>
-              <path d={`M${X_RECIP + 28},${y} L${X_THIRD - 32},${y}`} fill="none" stroke={C.alarm} strokeWidth={2.5} strokeDasharray="8 6" markerEnd="url(#arrow-red)" />
-              <text x={(X_RECIP + X_THIRD) / 2} y={y - 12} textAnchor="middle" fontSize="13" fill={C.alarm} style={MONO}>
-                {l.evidence.tagCode} surfaced
+              <path d={`M${X_RECIP + NODE / 2},${y} H${X_THIRD - NODE / 2 - 4}`} fill="none" stroke={C.accent} strokeWidth={1.4} strokeDasharray="5 4" markerEnd="url(#tt-arrow)" />
+              <text x={(X_RECIP + X_THIRD) / 2} y={y - 8} textAnchor="middle" fontSize="10" fill={C.accentInk} letterSpacing="0.6" style={MONO}>
+                {l.evidence.tagCode} SURFACED
               </text>
             </g>
-            <g className="anim-fade-in" style={{ animationDelay: "1.1s" }}>
-              <circle cx={X_THIRD} cy={y} r={25} fill="#2a1416" stroke={C.alarm} strokeWidth={2.5} />
-              <path d={`M${X_THIRD} ${y - 10} L${X_THIRD + 10} ${y + 8} H${X_THIRD - 10} Z`} fill="none" stroke={C.alarm} strokeWidth={2} strokeLinejoin="round" />
-              <path d={`M${X_THIRD} ${y - 3} v5 M${X_THIRD} ${y + 5} v0.5`} stroke={C.alarm} strokeWidth={2} strokeLinecap="round" />
-              <text x={X_THIRD} y={y + 48} textAnchor="middle" fontSize="14" fill={C.alarm} style={MONO}>
-                {truncate(l.sender_domain, 24)}
+            <g className="anim-fade" style={{ animationDelay: "0.9s" }}>
+              <rect x={X_THIRD - NODE / 2} y={y - NODE / 2} width={NODE} height={NODE} fill={C.accent} />
+              <path d={`M${X_THIRD - 6} ${y - 6} L${X_THIRD + 6} ${y + 6} M${X_THIRD + 6} ${y - 6} L${X_THIRD - 6} ${y + 6}`} stroke={C.surface} strokeWidth={1.6} />
+              <text x={X_THIRD} y={y + NODE / 2 + 15} textAnchor="middle" fontSize="11" fill={C.accentInk} style={MONO}>
+                {truncate(l.sender_domain, 26)}
               </text>
               {sim && (
-                <g transform={`translate(${X_THIRD},${y + 70})`}>
-                  <rect x={-42} y={-11} width={84} height={20} rx={4} fill="#2a200b" stroke={C.signal} strokeOpacity={0.7} />
-                  <text x={0} y={3.5} textAnchor="middle" fontSize="11" fontWeight={700} fill={C.signal} letterSpacing="1.4" style={MONO}>
+                <g transform={`translate(${X_THIRD},${y + NODE / 2 + 32})`}>
+                  <rect x={-34} y={-9} width={68} height={17} fill={C.surface} stroke={C.accent} strokeWidth={1} />
+                  <text x={0} y={3.5} textAnchor="middle" fontSize="9" fontWeight={600} fill={C.accentInk} letterSpacing="1" style={MONO}>
                     SIMULATED
                   </text>
                 </g>
@@ -138,35 +124,31 @@ export function TrailGraph({ state }: { state: UiState }) {
         );
       })}
 
-      {/* recipients */}
       {discs.map((d, i) => {
         const y = yFor(i);
         const broker = d.broker_ids.length > 0;
-        const ring = broker ? C.alarm : C.pass;
         const name = broker ? state.brokerNames[d.broker_ids[0]] : null;
         return (
-          <g key={`n-${d.id}`} className="anim-fade-in">
-            <circle cx={X_RECIP} cy={y} r={25} fill={C.panel} stroke={ring} strokeWidth={2.5} />
-            <text x={X_RECIP} y={y + 6} textAnchor="middle" fontSize="16" fontWeight={600} fill={ring}>
+          <g key={`n-${d.id}`} className="anim-fade">
+            <rect x={X_RECIP - NODE / 2} y={y - NODE / 2} width={NODE} height={NODE} fill={broker ? C.wash : C.surface} stroke={broker ? C.accent : C.ink} strokeWidth={1.2} />
+            <text x={X_RECIP} y={y + 4.5} textAnchor="middle" fontSize="13" fontWeight={600} fill={broker ? C.accentInk : C.ink} style={MONO}>
               {(d.recipient_domain[0] ?? "?").toUpperCase()}
             </text>
-            <text x={X_RECIP} y={y + 48} textAnchor="middle" fontSize="14" fill={C.fg} style={MONO}>
-              {truncate(shortHost(d.recipient_host), 24)}
+            <text x={X_RECIP} y={y + NODE / 2 + 13} textAnchor="middle" fontSize="11" fill={C.ink} style={MONO}>
+              {truncate(shortHost(d.recipient_host), 28)}
             </text>
-            <text x={X_RECIP} y={y + 67} textAnchor="middle" fontSize="13" fill={broker ? C.alarm : C.muted}>
-              {broker ? truncate(name ?? "Registered data broker", 30) : "not a broker · passed silently"}
+            <text x={X_RECIP} y={y + NODE / 2 + 25} textAnchor="middle" fontSize="9.5" fill={broker ? C.accentInk : C.muted} style={MONO}>
+              {broker ? truncate(name ?? "registered broker", 32) : "not a broker"}
             </text>
           </g>
         );
       })}
 
-      {/* You */}
-      <circle cx={X_YOU} cy={youY} r={50} fill="url(#you-glow)" />
-      <circle cx={X_YOU} cy={youY} r={30} fill={C.fg} />
-      <text x={X_YOU} y={youY + 5} textAnchor="middle" fontSize="15" fontWeight={700} fill={C.ink}>
-        You
+      <rect x={X_YOU - 20} y={youY - 20} width={40} height={40} fill={C.ink} />
+      <text x={X_YOU} y={youY + 4} textAnchor="middle" fontSize="11" fontWeight={600} fill={C.surface} letterSpacing="0.5" style={MONO}>
+        YOU
       </text>
-      <text x={X_YOU} y={youY + 52} textAnchor="middle" fontSize="14" fill={C.muted}>
+      <text x={X_YOU} y={youY + 36} textAnchor="middle" fontSize="11" fill={C.muted} style={MONO}>
         {state.person.firstName}
       </text>
     </svg>

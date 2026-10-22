@@ -4,23 +4,11 @@ import { useState } from "react";
 import { api, cx, fmtDate, fmtStamp } from "./format";
 import { Paper } from "./Paper";
 import type { DisclosureRow, ReceiptResponse, RequestRow, RequestSummary, UiState } from "./types";
-import { Button, OutcomePill, RiskBadge, SectionLabel, TagCode } from "./ui";
+import { Button, Card, CardHeader, Empty, Icon, OutcomeTag, RiskTag, Tag, TagCode } from "./ui";
 
-const KIND_LABEL: Record<string, string> = {
-  email: "email",
-  phone: "phone",
-  fullName: "name",
-  firstName: "first name",
-  lastName: "last name",
-  street: "street",
-  city: "city",
-  state: "state",
-  zip: "zip",
-  dob: "date of birth",
-  ssn: "SSN",
-  governmentId: "gov. ID",
-  financialAccount: "bank acct",
-  other: "other",
+const KIND: Record<string, string> = {
+  email: "email", phone: "phone", fullName: "name", firstName: "first", lastName: "last", street: "street", city: "city",
+  state: "state", zip: "zip", dob: "dob", ssn: "ssn", governmentId: "gov id", financialAccount: "bank", other: "other",
 };
 
 function ReceiptCheck({ disclosureId }: { disclosureId: string }) {
@@ -43,40 +31,24 @@ function ReceiptCheck({ disclosureId }: { disclosureId: string }) {
 
   if (!res)
     return (
-      <div>
+      <>
         <Button size="sm" onClick={verify} busy={busy}>
           Verify receipt
         </Button>
-        {err && <p className="mt-1 text-[12px] text-alarm">{err}</p>}
-      </div>
+        {err && <span className="text-[11.5px] text-accent-ink">{err}</span>}
+      </>
     );
 
   return (
     <div className="w-full">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className={cx(
-          "flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-[13px] font-medium",
-          res.verified ? "border-pass/40 bg-pass/[0.07] text-pass" : "border-alarm/50 bg-alarm/[0.08] text-alarm",
-        )}
-      >
-        <span className="flex items-center gap-2">
-          {res.verified ? (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 8.5l3.2 3L13 4.5" />
-            </svg>
-          ) : (
-            <span aria-hidden>✕</span>
-          )}
-          {res.verified ? "Signature valid · Ed25519" : "Signature INVALID"}
+      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between gap-2 border border-ink px-2.5 py-1.5 text-left transition-colors hover:bg-hover" aria-expanded={open}>
+        <span className={cx("flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.06em]", res.verified ? "text-ink" : "text-accent-ink")}>
+          {res.verified && <Icon name="check" />}
+          {res.verified ? "Signature valid · Ed25519" : "Signature invalid"}
         </span>
-        <span className="font-mono text-[11px] text-muted">{open ? "hide" : "receipt json"}</span>
+        <span className="font-mono text-[10.5px] text-muted">{open ? "hide" : "json"}</span>
       </button>
-      {open && (
-        <pre className="mt-2 max-h-64 overflow-auto rounded-lg border border-line bg-ink p-3 font-mono text-[11px] leading-relaxed text-muted">
-          {JSON.stringify(res.receipt, null, 2)}
-        </pre>
-      )}
+      {open && <pre className="anim-fade mt-1.5 max-h-60 overflow-auto border border-line bg-well p-2.5 font-mono text-[10.5px] leading-relaxed text-ink-2">{JSON.stringify(res.receipt, null, 2)}</pre>}
     </div>
   );
 }
@@ -85,7 +57,7 @@ function OptOut({ disc, existing, onChanged }: { disc: DisclosureRow; existing?:
   const [sent, setSent] = useState<RequestRow | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [showLetter, setShowLetter] = useState(false);
+  const [letter, setLetter] = useState(false);
   const req = sent ?? existing;
 
   async function send() {
@@ -103,78 +75,77 @@ function OptOut({ disc, existing, onChanged }: { disc: DisclosureRow; existing?:
 
   if (!req)
     return (
-      <div>
-        <Button size="sm" variant="secondary" onClick={send} busy={busy} className="border-signal/40 text-signal hover:border-signal/70">
+      <>
+        <Button size="sm" variant="secondary" onClick={send} busy={busy} className="border-accent text-accent-ink hover:border-accent-ink">
           Send opt-out
         </Button>
-        {err && <p className="mt-1 text-[12px] text-alarm">{err}</p>}
-      </div>
+        {err && <span className="text-[11.5px] text-accent-ink">{err}</span>}
+      </>
     );
 
   return (
-    <div className="w-full rounded-lg border border-signal/30 bg-signal/[0.05] px-3 py-2">
+    <div className="w-full border-l-2 border-accent bg-accent-wash/60 px-2.5 py-1.5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-        <span className="text-[13px] font-medium text-signal">Opt-out of sale/sharing</span>
-        <span className="whitespace-nowrap text-[12px] text-muted">
-          deadline <span className="font-mono text-fg">{fmtDate(req.due_at)}</span>
-        </span>
+        <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.06em] text-accent-ink">Opt-out of sale</span>
+        <span className="font-mono text-[11px] text-ink-2">due {fmtDate(req.due_at)}</span>
       </div>
-      <p className="mt-0.5 text-[12px] text-muted">
-        {req.channel === "manual" ? "Ready to send. The demo persona never emails real companies." : `Sent via ${req.channel} · ${fmtStamp(req.sent_at)}`}
-      </p>
+      <p className="mt-0.5 text-[11.5px] text-muted">{req.channel === "manual" ? "Ready to send. The demo persona never emails real companies." : `Sent via ${req.channel} · ${fmtStamp(req.sent_at)}`}</p>
       {sent?.body && (
         <>
-          <button onClick={() => setShowLetter((s) => !s)} className="mt-1 text-[12px] text-fg underline decoration-line-2 underline-offset-2 hover:decoration-fg">
-            {showLetter ? "Hide letter" : "Read the letter"}
+          <button onClick={() => setLetter((s) => !s)} className="mt-1 font-mono text-[11px] text-ink underline decoration-line-strong underline-offset-2 hover:decoration-ink">
+            {letter ? "hide letter" : "read letter"}
           </button>
-          {showLetter && <Paper body={sent.body} compact className="mt-2 max-h-80 overflow-auto" exhibit="Opt-out" />}
+          {letter && <Paper body={sent.body} compact className="mt-2 max-h-72 overflow-auto" exhibit="Opt-out" />}
         </>
       )}
     </div>
   );
 }
 
-function LedgerCard({ d, state, onChanged }: { d: DisclosureRow; state: UiState; onChanged: () => void }) {
+function Entry({ d, state, onChanged }: { d: DisclosureRow; state: UiState; onChanged: () => void }) {
   const broker = d.broker_ids.length > 0;
   const names = d.broker_ids.map((id) => state.brokerNames[id] ?? id);
   const optout = state.requests.find((r) => r.kind === "optout" && r.tag_code === d.tag_code);
   const leaked = state.leaks.some((l) => l.disclosure_id === d.id);
   return (
-    <article className={cx("anim-slide-up rounded-xl border bg-panel", leaked ? "border-alarm/50" : "border-line")}>
-      <header className="flex items-start justify-between gap-3 border-b border-line px-4 pt-3.5 pb-3">
+    <article className={cx("anim-rise border-b border-line px-4 py-3 last:border-0", leaked && "shadow-[inset_2px_0_0_0_var(--color-accent)]")}>
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="truncate font-mono text-[15px] font-medium text-fg">{d.recipient_host}</div>
-          <div className="mt-0.5 truncate text-[13px] text-muted">{d.purpose || "—"}</div>
-          {broker && <div className="mt-1 truncate text-[13px] text-alarm">{names.join(", ")}</div>}
+          <h3 className="truncate text-[13px] font-semibold text-ink">{d.recipient_host}</h3>
+          <p className="truncate text-[12px] text-muted">{d.purpose || "—"}</p>
+          {broker && <p className="truncate font-mono text-[11px] text-accent-ink">{names.join(", ")}</p>}
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <RiskBadge level={d.risk_level} />
-          <span className="font-mono text-[11px] text-dim">{fmtStamp(d.created_at)}</span>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <RiskTag level={d.risk_level} />
+          {leaked && <Tag tone="accent">Leaked</Tag>}
         </div>
-      </header>
-
-      <ul className="divide-y divide-line/70 px-4">
-        {d.fields.map((f) => (
-          <li key={f.selector} className="flex items-center justify-between gap-2 py-1.5">
-            <span className="min-w-0 truncate text-[14px] text-fg">
-              {f.label} <span className="font-mono text-[11px] text-dim">{KIND_LABEL[f.kind] ?? f.kind}</span>
-            </span>
-            <OutcomePill action={f.action} />
-          </li>
-        ))}
-      </ul>
-
-      <div className="mx-4 mt-2 flex items-center gap-3 rounded-lg border border-line bg-ink px-3 py-2">
-        <TagCode code={d.tag_code} />
-        <span className="min-w-0 truncate font-mono text-[13px] text-fg" title={d.alias_email ?? undefined}>
-          {d.alias_email ?? <span className="text-dim">no email given</span>}
-        </span>
       </div>
 
-      <footer className="flex flex-col gap-2 px-4 py-3">
+      <dl className="mt-2.5 grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1">
+        {d.fields.map((f) => (
+          <div key={f.selector + f.kind} className="contents">
+            <dt className="truncate text-[12.5px] text-ink-2">
+              {f.label} <span className="font-mono text-[10px] text-faint">{KIND[f.kind] ?? f.kind}</span>
+            </dt>
+            <dd>
+              <OutcomeTag action={f.action} />
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      <div className="mt-2.5 flex items-center gap-2 border border-line bg-well px-2 py-1.5">
+        <TagCode code={d.tag_code} size="sm" accent={broker} />
+        <span className="min-w-0 truncate font-mono text-[11.5px] text-ink" title={d.alias_email ?? undefined}>
+          {d.alias_email ?? <span className="text-faint">no email given</span>}
+        </span>
+        <span className="ml-auto shrink-0 font-mono text-[10px] text-faint">{fmtStamp(d.created_at).slice(5)}</span>
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         <ReceiptCheck disclosureId={d.id} />
         {broker && <OptOut disc={d} existing={optout} onChanged={onChanged} />}
-      </footer>
+      </div>
     </article>
   );
 }
@@ -182,21 +153,11 @@ function LedgerCard({ d, state, onChanged }: { d: DisclosureRow; state: UiState;
 export function Ledger({ state, onChanged }: { state: UiState; onChanged: () => void }) {
   const discs = [...state.disclosures].reverse();
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <SectionLabel right={<span className="font-mono text-[12px] text-dim">{discs.length} receipts</span>}>Ledger</SectionLabel>
-      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-        {discs.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-line px-4 py-6 text-center text-[14px] text-muted">
-            Each disclosure gets a tag code and an Ed25519-signed consent receipt.
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {discs.map((d) => (
-              <LedgerCard key={d.id} d={d} state={state} onChanged={onChanged} />
-            ))}
-          </div>
-        )}
+    <Card className="flex h-full min-h-0 flex-col">
+      <CardHeader title="Ledger" meta={<span className="font-mono text-[10.5px] text-faint">{discs.length} signed receipts</span>} />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {discs.length === 0 ? <Empty className="m-3">Each disclosure gets a tag and an Ed25519-signed consent receipt.</Empty> : discs.map((d) => <Entry key={d.id} d={d} state={state} onChanged={onChanged} />)}
       </div>
-    </div>
+    </Card>
   );
 }

@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, cx, fmtTime, hostOf } from "./format";
-import { Button, SectionLabel } from "./ui";
+import { Button, Card, CardHeader, Empty, Tag } from "./ui";
 
 // Stage presets. Edit freely: `label` is the chip text, `task` is what the agent receives.
 export const PRESETS: { label: string; task: string }[] = [
   // {origin} becomes this app's address: the dental office is a fictional demo page served by Telltale.
-  { label: "Book a dental cleaning", task: "Book a dental cleaning at {origin}/demo/dental using my details" },
-  { label: "Get car insurance quotes", task: "Get me car insurance quotes at https://www.bestautoinsurance.com for my 2019 Honda Civic. Use my details where the form asks." },
+  { label: "Dental cleaning", task: "Book a dental cleaning at {origin}/demo/dental using my details" },
+  { label: "Car insurance quotes", task: "Get me car insurance quotes at https://www.bestautoinsurance.com for my 2019 Honda Civic. Use my details where the form asks." },
   { label: "People-search account", task: "Create a free account at https://www.spokeo.com so I can check what it shows about me" },
 ];
 
@@ -18,127 +18,85 @@ export type LogEntry =
   | { id: string; at: string; kind: "log"; text: string }
   | { id: string; at: string; kind: "done"; text: string };
 
-function Icon({ name }: { name: string }) {
-  const common = { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-  switch (name) {
-    case "navigate":
-      return (
-        <svg {...common}>
-          <circle cx="8" cy="8" r="6" />
-          <path d="M2 8h12M8 2c1.8 2 1.8 10 0 12M8 2c-1.8 2-1.8 10 0 12" />
-        </svg>
-      );
-    case "read_page":
-      return (
-        <svg {...common}>
-          <path d="M3 2.5h7l3 3v8H3z" />
-          <path d="M5.5 7.5h5M5.5 10h5" />
-        </svg>
-      );
-    case "fill_form":
-      return (
-        <svg {...common}>
-          <path d="M2.5 3.5A1 1 0 0 1 3.5 2.5h4.6l5.4 5.4-5.6 5.6-5.4-5.4z" />
-          <circle cx="5.5" cy="5.5" r="1" fill="currentColor" stroke="none" />
-        </svg>
-      );
-    case "click":
-      return (
-        <svg {...common}>
-          <path d="M5 2.5v8l2.2-2 1.6 3.6 1.6-.7-1.6-3.5H12z" />
-        </svg>
-      );
-    case "finish":
-      return (
-        <svg {...common}>
-          <path d="M3 8.5l3.2 3L13 4.5" />
-        </svg>
-      );
-    default:
-      return (
-        <svg {...common}>
-          <circle cx="8" cy="8" r="2" />
-        </svg>
-      );
-  }
-}
-
-function rec(v: unknown): Record<string, unknown> {
-  return v && typeof v === "object" ? (v as Record<string, unknown>) : {};
-}
+const rec = (v: unknown): Record<string, unknown> => (v && typeof v === "object" ? (v as Record<string, unknown>) : {});
 
 function LogRow({ e }: { e: LogEntry }) {
+  const time = <span className="w-[52px] shrink-0 pt-px font-mono text-[10.5px] tabular-nums text-faint">{fmtTime(e.at).slice(0, 8)}</span>;
+
   if (e.kind === "run")
     return (
-      <div className="anim-row-in border-t border-line pt-3 mt-1 first:border-0 first:mt-0 first:pt-0">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted">New run</span>
-          <span className="font-mono text-[12px] text-dim">{fmtTime(e.at)}</span>
+      <li className="anim-rise border-t border-line px-4 py-2.5 first:border-0">
+        <div className="flex items-center gap-2">
+          <Tag tone="ink">Run</Tag>
+          <span className="font-mono text-[10.5px] text-faint">{fmtTime(e.at)}</span>
         </div>
-        <p className="mt-1 text-[15px] text-fg">{e.task}</p>
-      </div>
+        <p className="mt-1.5 text-[13px] leading-snug text-ink">{e.task}</p>
+      </li>
     );
   if (e.kind === "log")
-    return <p className="anim-row-in pl-7 text-[14px] leading-snug text-muted">{e.text}</p>;
+    return (
+      <li className="anim-rise flex gap-3 px-4 py-1">
+        {time}
+        <p className="text-[12.5px] leading-snug text-muted">{e.text}</p>
+      </li>
+    );
   if (e.kind === "done") {
     const err = e.text.startsWith("Error:");
     return (
-      <div className={cx("anim-row-in rounded-lg border px-3 py-2.5 text-[14px]", err ? "border-alarm/40 bg-alarm/[0.07] text-alarm" : "border-pass/30 bg-pass/[0.06] text-fg")}>
-        <span className={cx("mr-2 font-semibold", err ? "text-alarm" : "text-pass")}>{err ? "Stopped" : "Done"}</span>
-        {err ? e.text.replace(/^Error:\s*/, "") : e.text}
-      </div>
+      <li className={cx("anim-rise mx-4 my-2 border px-3 py-2", err ? "border-accent" : "border-ink")}>
+        <Tag tone={err ? "accent" : "ink"}>{err ? "Stopped" : "Complete"}</Tag>
+        <p className="mt-1.5 text-[12.5px] leading-snug text-ink">{err ? e.text.replace(/^Error:\s*/, "") : e.text}</p>
+      </li>
     );
   }
+
   const input = rec(e.input);
-  let main: React.ReactNode = e.tool;
-  let tone = "text-muted";
+  let text: React.ReactNode = null;
+  let accent = false;
   switch (e.tool) {
     case "navigate": {
       const url = String(input.url ?? "");
-      main = (
+      text = (
         <>
-          Opened <span className="font-mono text-fg">{hostOf(url)}</span>
-          <span className="font-mono text-dim">{url.replace(/^https?:\/\/[^/]+/, "")}</span>
+          <span className="font-mono text-ink">{hostOf(url)}</span>
+          <span className="font-mono text-faint">{url.replace(/^https?:\/\/[^/]+/, "")}</span>
         </>
       );
       break;
     }
     case "read_page":
-      main = "Read the page";
+      text = "Read the page";
       break;
     case "fill_form": {
       const fields = Array.isArray(input.fields) ? input.fields : [];
-      tone = "text-signal";
-      main = (
-        <>
-          <span className="text-fg">
-            Asked Telltale for <span className="font-semibold text-signal">{fields.length} field{fields.length === 1 ? "" : "s"}</span>
-          </span>
-          {typeof input.purpose === "string" && <span className="block text-[13px] text-muted">for “{input.purpose}” · values never reach the model</span>}
-        </>
+      accent = true;
+      text = (
+        <span className="text-ink">
+          Requested {fields.length} personal field{fields.length === 1 ? "" : "s"} · intercepted
+        </span>
       );
       break;
     }
-    case "click":
-      main = (
+    case "set_field":
+      text = (
         <>
-          Clicked <span className="font-mono text-[13px] text-fg">{String(input.selector ?? "")}</span>
+          Answered <span className="font-mono text-ink">{String(input.value ?? "")}</span>
         </>
       );
       break;
+    case "click":
+      text = <span className="font-mono text-[12px]">{String(input.selector ?? "")}</span>;
+      break;
     case "finish":
-      tone = "text-pass";
-      main = <span className="text-fg">{String(input.summary ?? "Finished")}</span>;
+      text = <span className="text-ink">{String(input.summary ?? "Finished")}</span>;
       break;
   }
   return (
-    <div className="anim-row-in flex items-start gap-3">
-      <span className={cx("mt-[3px] shrink-0", tone)}>
-        <Icon name={e.tool} />
-      </span>
-      <div className="min-w-0 flex-1 text-[14px] leading-snug text-muted break-words">{main}</div>
-      <span className="shrink-0 font-mono text-[11px] text-dim">{fmtTime(e.at)}</span>
-    </div>
+    <li className="anim-rise flex items-start gap-3 px-4 py-1">
+      {time}
+      <span className={cx("w-[76px] shrink-0 pt-px font-mono text-[10.5px] font-semibold uppercase tracking-[0.04em]", accent ? "text-accent-ink" : "text-ink-2")}>{e.tool.replace("_", " ")}</span>
+      <div className="min-w-0 flex-1 break-words text-[12.5px] leading-snug text-muted">{text}</div>
+    </li>
   );
 }
 
@@ -162,6 +120,12 @@ export function AgentPanel({
   useEffect(() => setTask((t) => withOrigin(t)), []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Keep the newest activity in view by scrolling the log itself, never the page around it.
+  const logBox = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = logBox.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [log.length]);
 
   async function run() {
     setBusy(true);
@@ -177,83 +141,90 @@ export function AgentPanel({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <SectionLabel
-        right={
+    <Card className="flex h-full min-h-0 flex-col">
+      <CardHeader
+        title="Agent"
+        meta={
           running ? (
-            <span className="flex items-center gap-2 text-[12px] text-signal">
-              <span className="size-1.5 animate-pulse rounded-full bg-signal" /> Running
-            </span>
-          ) : null
+            <Tag tone="accent">
+              <span className="anim-blink size-[5px] bg-accent" aria-hidden />
+              Running
+            </Tag>
+          ) : (
+            <Tag tone="muted">Idle</Tag>
+          )
         }
-      >
-        Agent
-      </SectionLabel>
-      <div className="rounded-xl border border-line bg-panel p-3">
+      />
+      <div className="border-b border-line p-3">
+        <label htmlFor="agent-task" className="sr-only">
+          Task for the agent
+        </label>
         <textarea
+          id="agent-task"
           value={task}
           onChange={(e) => setTask(e.target.value)}
-          rows={3}
-          className="w-full resize-none rounded-lg border border-line bg-ink px-3 py-2 text-[15px] leading-snug text-fg placeholder:text-dim focus:border-line-2 focus:outline-none"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) run();
+          }}
+          rows={running || frame ? 2 : 3}
+          className="w-full resize-none border border-line-strong bg-surface px-3 py-2 text-[13.5px] leading-snug text-ink placeholder:text-faint transition-colors focus:border-ink focus:outline-none"
           placeholder="Tell your agent what to do…"
         />
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {PRESETS.map((p) => (
-            <button
-              key={p.label}
-              onClick={() => setTask(withOrigin(p.task))}
-              className={cx(
-                "rounded-full border px-2.5 py-1 text-[12px] transition-colors",
-                task === p.task ? "border-signal/50 bg-signal/10 text-signal" : "border-line text-muted hover:border-line-2 hover:text-fg",
-              )}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div className="mt-2 flex flex-wrap gap-1">
+          {PRESETS.map((p) => {
+            const on = task === withOrigin(p.task);
+            return (
+              <button
+                key={p.label}
+                onClick={() => setTask(withOrigin(p.task))}
+                className={cx("h-6 border px-2 font-mono text-[11px] transition-colors", on ? "border-ink bg-ink text-white" : "border-line-strong text-ink-2 hover:border-ink hover:text-ink")}
+              >
+                {p.label}
+              </button>
+            );
+          })}
         </div>
-        <div className="mt-3 flex items-center gap-3">
-          <Button variant="primary" onClick={run} busy={busy} disabled={task.trim().length < 3} className="flex-1">
-            Run agent
-          </Button>
-        </div>
-        {!modelOn && !error && <p className="mt-2 text-[12px] text-dim">No model key set. Use the stage panel (press D) to preview a site.</p>}
-        {error && (
-          <p className="mt-2 rounded-md border border-alarm/40 bg-alarm/[0.08] px-2.5 py-1.5 text-[13px] text-alarm">
-            {error.includes("ANTHROPIC_API_KEY") ? "The agent needs ANTHROPIC_API_KEY. Preview a site from the stage panel instead (press D)." : error}
-          </p>
-        )}
+        <Button variant="primary" onClick={run} busy={busy} disabled={task.trim().length < 3 || running} className="mt-3 w-full">
+          {running ? "Agent is running" : "Run agent"}
+          {!running && <span className="kbd border-white/25 bg-transparent text-white/60">Ctrl ↵</span>}
+        </Button>
+        {!modelOn && !error && <p className="mt-2 text-[12px] text-muted">No model key set. Use stage controls (D) to preview a site.</p>}
+        {error && <p className="mt-2 border-l-2 border-accent pl-2 text-[12px] text-accent-ink">{error.includes("ANTHROPIC_API_KEY") ? "The agent needs ANTHROPIC_API_KEY. Preview a site from stage controls (D)." : error}</p>}
       </div>
 
       {(frame || liveViewUrl) && (
-        <div className="mt-3 overflow-hidden rounded-xl border border-line bg-black">
-          <div className="flex items-center justify-between gap-3 border-b border-line px-3 py-1.5">
-            <span className="truncate font-mono text-[12px] text-muted">{frame ? hostOf(frame.url) : "Live browser"}</span>
-            <span className="flex shrink-0 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-alarm">
-              <span className={cx("size-1.5 rounded-full bg-alarm", running && "animate-pulse")} /> {running ? "Live" : "Last view"}
+        <figure className="border-b border-line">
+          <figcaption className="flex h-7 items-center justify-between gap-2 border-b border-line bg-well px-3">
+            <span className="truncate font-mono text-[11px] text-ink-2">{frame ? hostOf(frame.url) : "Live browser"}</span>
+            <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
+              <span className={cx("size-[6px]", running ? "anim-blink bg-accent" : "bg-line-strong")} />
+              {running ? "live" : "last frame"}
             </span>
-          </div>
+          </figcaption>
           {frame ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={`data:image/jpeg;base64,${frame.data}`} alt="What the agent's browser shows" className="aspect-[1280/860] w-full object-cover object-top" />
+            <img src={`data:image/jpeg;base64,${frame.data}`} alt="What the agent's browser shows" className="h-[168px] w-full object-cover object-top" />
           ) : (
-            <iframe src={liveViewUrl!} className="aspect-[16/10] w-full" allow="autoplay; clipboard-read; clipboard-write" title="Agent browser live view" />
+            <iframe src={liveViewUrl!} className="h-[168px] w-full" allow="autoplay; clipboard-read; clipboard-write" title="Agent browser live view" />
           )}
-        </div>
+        </figure>
       )}
 
-      <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+      <div className="flex h-8 shrink-0 items-center justify-between border-b border-line px-4">
+        <span className="label">Activity</span>
+        <span className="font-mono text-[10.5px] text-faint">{log.length} events</span>
+      </div>
+      <div ref={logBox} className="min-h-[96px] flex-1 overflow-y-auto py-1">
         {log.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-line px-4 py-6 text-center text-[14px] text-muted">
-            The agent never sees Maya&apos;s details. When it reaches a form, it asks Telltale, and Telltale decides what each field gets.
-          </div>
+          <Empty className="m-3">The agent never sees personal details. It asks for field types; Telltale decides and types the values.</Empty>
         ) : (
-          <div className="flex flex-col gap-3">
+          <ol className="flex flex-col">
             {log.map((e) => (
               <LogRow key={e.id} e={e} />
             ))}
-          </div>
+          </ol>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

@@ -2,22 +2,19 @@
 
 import type { ReactNode } from "react";
 import { cx, dayNumber, fmtDate, fmtShortDate, fmtStamp } from "./format";
-import type { DisclosureRow, MessageRow, RequestSummary, UiState } from "./types";
 import { TrailGraph } from "./TrailGraph";
-import { SectionLabel, SimBadge, TagCode } from "./ui";
+import type { DisclosureRow, MessageRow, RequestSummary, UiState } from "./types";
+import { Card, CardHeader, Empty, SimTag, TagCode } from "./ui";
 
-type Item = { key: string; at: string; order: number; tone: "alarm" | "pass" | "signal" | "muted" | "fg"; when: ReactNode; title: ReactNode; meta?: ReactNode; sim?: boolean };
+type Tone = "accent" | "ink" | "muted";
+type Item = { key: string; at: string; order: number; tone: Tone; kind: string; when: ReactNode; title: ReactNode; meta?: ReactNode; sim?: boolean };
 
-function statusText(r: RequestSummary) {
-  if (r.channel === "manual") return "ready to send · demo persona never emails real companies";
-  return r.status;
-}
+const statusText = (r: RequestSummary) => (r.channel === "manual" ? "ready to send · demo persona never emails real companies" : r.status);
 
 export function buildTimeline(state: UiState): Item[] {
   const discById = new Map(state.disclosures.map((d) => [d.id, d]));
   const items: Item[] = [];
-  const whenFor = (iso: string, replay: boolean, disc?: DisclosureRow) =>
-    replay && disc ? <span className="text-signal">Day {dayNumber(disc.created_at, iso)}</span> : fmtStamp(iso);
+  const whenFor = (iso: string, replay: boolean, disc?: DisclosureRow) => (replay && disc ? <span className="text-accent-ink">Day {dayNumber(disc.created_at, iso)}</span> : fmtStamp(iso));
 
   for (const d of state.disclosures) {
     const broker = d.broker_ids.length > 0;
@@ -26,14 +23,15 @@ export function buildTimeline(state: UiState): Item[] {
       key: `d-${d.id}`,
       at: d.created_at,
       order: 0,
-      tone: broker ? "alarm" : "pass",
+      tone: broker ? "accent" : "ink",
+      kind: "Release",
       when: fmtStamp(d.created_at),
       title: (
         <>
-          Gave {shared} of {d.fields.length} fields to <span className="font-mono">{d.recipient_host}</span> <TagCode code={d.tag_code} size="sm" />
+          {shared} of {d.fields.length} fields to <span className="font-mono">{d.recipient_host}</span> <TagCode code={d.tag_code} size="sm" accent={broker} />
         </>
       ),
-      meta: broker ? `Registered data broker · you chose each field${d.purpose ? ` · ${d.purpose}` : ""}` : `Passed silently · email tagged${d.purpose ? ` · ${d.purpose}` : ""}`,
+      meta: broker ? `Registered broker · you chose each field${d.purpose ? ` · ${d.purpose}` : ""}` : `Passed silently · email tagged${d.purpose ? ` · ${d.purpose}` : ""}`,
     });
   }
   for (const r of state.requests) {
@@ -42,12 +40,13 @@ export function buildTimeline(state: UiState): Item[] {
       key: `r-${r.id}`,
       at,
       order: 1,
-      tone: "signal",
+      tone: "ink",
+      kind: r.kind === "optout" ? "Opt-out" : "Delete",
       when: fmtStamp(at),
       title:
         r.kind === "optout" ? (
           <>
-            Opt-out of sale/sharing sent to <span className="font-mono">{r.target_domain}</span>
+            Opt-out of sale/sharing to <span className="font-mono">{r.target_domain}</span>
           </>
         ) : (
           <>
@@ -56,27 +55,28 @@ export function buildTimeline(state: UiState): Item[] {
         ),
       meta: (
         <>
-          deadline <span className="font-mono text-fg">{fmtDate(r.due_at)}</span> · {statusText(r)}
+          deadline <span className="font-mono text-ink">{fmtDate(r.due_at)}</span> · {statusText(r)}
         </>
       ),
     });
   }
   const leakByMsg = new Map(state.leaks.map((l) => [l.message_id, l]));
+  const label: Record<MessageRow["classification"], { t: string; tone: Tone }> = {
+    "first-party": { t: "Expected mail from", tone: "muted" },
+    affiliate: { t: "Mail from a registered affiliate", tone: "ink" },
+    leak: { t: "Contact from a stranger", tone: "accent" },
+    untagged: { t: "Untagged mail from", tone: "muted" },
+  };
   for (const m of state.messages) {
-    const disc = m.disclosure_id ? discById.get(m.disclosure_id) : undefined;
-    const label: Record<MessageRow["classification"], { t: string; tone: Item["tone"] }> = {
-      "first-party": { t: "Expected mail from", tone: "pass" },
-      affiliate: { t: "Mail from a registered affiliate", tone: "signal" },
-      leak: { t: "Contact from a stranger", tone: "alarm" },
-      untagged: { t: "Untagged mail from", tone: "muted" },
-    };
-    const c = label[m.classification];
     if (leakByMsg.has(m.id)) continue; // shown as the leak entry
+    const disc = m.disclosure_id ? discById.get(m.disclosure_id) : undefined;
+    const c = label[m.classification];
     items.push({
       key: `m-${m.id}`,
       at: m.received_at,
       order: 2,
       tone: c.tone,
+      kind: "Inbound",
       sim: m.replay,
       when: whenFor(m.received_at, m.replay, disc),
       title: (
@@ -94,20 +94,21 @@ export function buildTimeline(state: UiState): Item[] {
       key: `l-${l.id}`,
       at: ev.observed.at,
       order: 3,
-      tone: "alarm",
+      tone: "accent",
+      kind: "Leak",
       sim: ev.observed.replay,
       when: whenFor(ev.observed.at, ev.observed.replay, disc),
       title: (
         <>
-          <span className="font-semibold text-alarm">Leak traced.</span> <TagCode code={ev.tagCode} size="sm" /> given only to{" "}
-          <span className="font-mono">{ev.issuedTo.domain}</span> was used by <span className="font-mono text-alarm">{l.sender_domain}</span>
+          <TagCode code={ev.tagCode} size="sm" accent /> given only to <span className="font-mono">{ev.issuedTo.domain}</span> used by{" "}
+          <span className="font-mono text-accent-ink">{l.sender_domain}</span>
         </>
       ),
       meta: (
         <>
           {ev.observed.subject ? `“${ev.observed.subject}”` : ""}
           {ev.violation && (
-            <span className="text-alarm">
+            <span className="text-accent-ink">
               {ev.observed.subject ? " · " : ""}after the opt-out deadline {fmtShortDate(ev.violation.deadlinePassed[0])}
             </span>
           )}
@@ -118,31 +119,22 @@ export function buildTimeline(state: UiState): Item[] {
   return items.sort((a, b) => a.at.localeCompare(b.at) || a.order - b.order);
 }
 
-const TONE: Record<Item["tone"], string> = {
-  alarm: "bg-alarm",
-  pass: "bg-pass",
-  signal: "bg-signal",
-  muted: "bg-dim",
-  fg: "bg-fg",
-};
-
 export function Timeline({ state }: { state: UiState }) {
   const items = buildTimeline(state);
-  if (!items.length) return <p className="text-[14px] text-muted">Every disclosure, request, and message touching a tag lands here.</p>;
+  if (!items.length) return <Empty className="m-4">Every disclosure, request and message touching a tag lands here.</Empty>;
   return (
-    <ol className="relative">
-      <span className="absolute left-[132px] top-2 bottom-2 w-px bg-line" aria-hidden />
+    <ol className="divide-y divide-line">
       {items.map((it) => (
-        <li key={it.key} className="anim-row-in relative grid grid-cols-[120px_24px_1fr] items-start gap-x-1 py-2">
-          <span className="pt-[2px] text-right font-mono text-[12px] text-muted">{it.when}</span>
-          <span className="flex justify-center pt-[7px]">
-            <span className={cx("relative z-10 size-2.5 rounded-full ring-4 ring-ink", TONE[it.tone])} />
+        <li key={it.key} className="anim-rise grid grid-cols-[110px_68px_minmax(0,1fr)] items-baseline gap-x-3 px-4 py-2 transition-colors hover:bg-hover">
+          <span className="font-mono text-[11px] tabular-nums text-muted">{it.when}</span>
+          <span className={cx("font-mono text-[10.5px] font-semibold uppercase tracking-[0.05em]", it.tone === "accent" ? "text-accent-ink" : it.tone === "ink" ? "text-ink" : "text-faint")}>
+            {it.kind}
           </span>
           <div className="min-w-0">
-            <div className="text-[15px] leading-snug text-fg">
-              {it.title} {it.sim && <SimBadge className="ml-1 align-[2px]" />}
+            <div className="text-[13px] leading-snug text-ink">
+              {it.title} {it.sim && <SimTag className="ml-1 align-[1px]" />}
             </div>
-            {it.meta && <div className="mt-0.5 text-[13px] text-muted">{it.meta}</div>}
+            {it.meta && <div className="mt-0.5 text-[12px] text-muted">{it.meta}</div>}
           </div>
         </li>
       ))}
@@ -150,42 +142,20 @@ export function Timeline({ state }: { state: UiState }) {
   );
 }
 
-export function Stats({ state }: { state: UiState }) {
-  const toBrokers = state.disclosures.filter((d) => d.broker_ids.length).length;
-  const optouts = state.requests.filter((r) => r.kind === "optout").length;
-  const stats: { label: string; value: number; tone?: string }[] = [
-    { label: "Disclosures", value: state.disclosures.length },
-    { label: "To data brokers", value: toBrokers, tone: toBrokers ? "text-alarm" : undefined },
-    { label: "Opt-outs sent", value: optouts, tone: optouts ? "text-signal" : undefined },
-    { label: "Leaks traced", value: state.leaks.length, tone: state.leaks.length ? "text-alarm" : undefined },
-  ];
+export function TrailCard({ state }: { state: UiState }) {
   return (
-    <div className="grid grid-cols-4 divide-x divide-line rounded-xl border border-line bg-panel">
-      {stats.map((s) => (
-        <div key={s.label} className="px-4 py-3">
-          <div className={cx("text-[40px] font-semibold leading-none tracking-[-0.03em] tabular-nums", s.tone ?? "text-fg")}>{s.value}</div>
-          <div className="mt-1.5 text-[12px] text-muted">{s.label}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function DataTrail({ state }: { state: UiState }) {
-  return (
-    <div className="flex flex-col gap-4">
-      <Stats state={state} />
-      <div>
-        <SectionLabel right={<span className="text-[12px] text-dim">{state.registry.brokers} brokers on the CA registry</span>}>Data trail</SectionLabel>
-        <div className="rounded-xl border border-line bg-panel px-3 py-2">
+    <Card className="flex h-full min-h-0 flex-col">
+      <CardHeader title="Data trail" meta={<span className="font-mono text-[10.5px] text-faint">{state.registry.brokers} brokers on the CA registry</span>} />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="border-b border-line">
           <TrailGraph state={state} />
         </div>
-      </div>
-      <div>
-        <SectionLabel>Timeline</SectionLabel>
+        <div className="flex h-8 items-center justify-between border-b border-line px-4">
+          <span className="label">Timeline</span>
+          <span className="font-mono text-[10.5px] text-faint">oldest first</span>
+        </div>
         <Timeline state={state} />
       </div>
-    </div>
+    </Card>
   );
 }
-

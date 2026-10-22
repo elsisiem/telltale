@@ -3,15 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { TelltaleEvent } from "@/lib/events";
 import { AgentPanel, type LogEntry } from "./AgentPanel";
+import { AppShell } from "./AppShell";
 import { ConsentCard } from "./ConsentCard";
-import { DataTrail } from "./DataTrail";
+import { TrailCard } from "./DataTrail";
 import { api } from "./format";
 import { useDashboard, useEvents, useSessionState } from "./hooks";
 import { LeakAlert } from "./LeakAlert";
 import { Ledger } from "./Ledger";
-import { IntegrationPills, SiteHeader, SyntheticBadge } from "./SiteHeader";
+import { Pipeline } from "./Pipeline";
 import { StagePanel } from "./StagePanel";
 import type { CardView, PendingView } from "./types";
+import { Button, Skeleton } from "./ui";
 
 let seq = 0;
 const uid = () => `${Date.now().toString(36)}-${(seq++).toString(36)}`;
@@ -66,7 +68,7 @@ export function Console() {
           break;
         case "agent.frame":
           setFrame({ data: e.data, url: e.url });
-          break;
+          return; // frames arrive ~1/s and change nothing else on the page
         case "consent.request":
           void showPending(e.pendingId);
           break;
@@ -88,7 +90,7 @@ export function Console() {
     if (next) setCard({ view: next, readOnly: false });
   }, [state, card]);
 
-  // "d" toggles the stage panel (ignored while typing).
+  // "d" toggles stage controls (ignored while typing).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
@@ -101,28 +103,40 @@ export function Console() {
   }, []);
 
   const leak = state?.leaks.at(-1);
+  const livePending = card && !card.readOnly ? card.view : (state?.pending.find((p) => !closedIds.current.has(p.id)) ?? null);
 
   return (
-    <div className="flex h-screen min-h-[640px] flex-col overflow-hidden">
-      <SiteHeader
-        right={
-          state && (
-            <>
-              <IntegrationPills integrations={state.integrations} />
-              {state.person.synthetic && <SyntheticBadge name={state.person.firstName} />}
-            </>
-          )
-        }
-      />
-      {state && leak && <LeakAlert key={leak.id} leak={leak} state={state} onChanged={refreshSoon} />}
-
+    <AppShell
+      active="console"
+      state={state}
+      connected={connected}
+      crumbs={["Telltale", "Console"]}
+      actions={
+        <Button size="sm" variant="ghost" onClick={() => setStageOpen((o) => !o)} title="Stage controls (D)">
+          Stage <span className="kbd">D</span>
+        </Button>
+      }
+    >
       {!state ? (
-        <div className="flex flex-1 items-center justify-center text-[15px] text-muted">
-          {error ? <span className="text-alarm">Could not load state: {error}</span> : "Opening the evidence locker…"}
+        <div className="flex flex-col gap-4 p-5">
+          {error ? (
+            <p className="border-l-2 border-accent pl-3 text-[13px] text-accent-ink">Could not load state: {error}</p>
+          ) : (
+            <>
+              <Skeleton className="h-[188px]" />
+              <div className="grid grid-cols-[340px_minmax(0,1fr)_380px] gap-4">
+                <Skeleton className="h-[480px]" />
+                <Skeleton className="h-[480px]" />
+                <Skeleton className="h-[480px]" />
+              </div>
+            </>
+          )}
         </div>
       ) : (
-        <main className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)_360px] gap-5 px-5 py-5 min-[1400px]:grid-cols-[340px_minmax(0,1fr)_400px] min-[1400px]:gap-6 min-[1400px]:px-6">
-          <div className="min-h-0">
+        <div className="flex h-full flex-col gap-4 p-5">
+          {leak && <LeakAlert key={leak.id} leak={leak} state={state} onChanged={refreshSoon} />}
+          <Pipeline state={state} pending={livePending} running={running} onReview={() => livePending && setCard({ view: livePending, readOnly: false })} />
+          <div className="grid min-h-[520px] flex-1 grid-cols-1 gap-4 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[312px_minmax(0,1fr)_356px] 2xl:grid-cols-[340px_minmax(0,1fr)_384px]">
             <AgentPanel
               log={log}
               liveViewUrl={liveViewUrl}
@@ -136,34 +150,22 @@ export function Console() {
                 setLog((l) => [...l, { id: runId, at: new Date().toISOString(), kind: "run", task }]);
               }}
             />
+            <TrailCard state={state} />
+            <div className="min-h-0 lg:col-span-2 xl:col-span-1">
+              <Ledger state={state} onChanged={refreshSoon} />
+            </div>
           </div>
-          <div className="min-h-0 overflow-y-auto pr-1">
-            <DataTrail state={state} />
-          </div>
-          <div className="min-h-0">
-            <Ledger state={state} onChanged={refreshSoon} />
-          </div>
-        </main>
+          <footer className="flex items-center justify-between font-mono text-[10.5px] text-faint">
+            <span>
+              Registry · {state.registry.source.publisher} · {state.registry.brokers} registered brokers · {state.registry.source.registrationYear} filings, self-reported
+            </span>
+            <span>Not legal advice. Telltale drafts; people decide and file.</span>
+          </footer>
+        </div>
       )}
-
-      <footer className="flex h-9 shrink-0 items-center justify-between border-t border-line px-6 text-[12px] text-dim">
-        <span>
-          Registry: {state?.registry.source.publisher ?? "California Privacy Protection Agency"} · {state?.registry.brokers ?? 603} registered brokers ·{" "}
-          {state?.registry.source.registrationYear ?? 2026} filings, self-reported
-        </span>
-        <span className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5">
-            <span className={connected ? "size-1.5 rounded-full bg-pass" : "size-1.5 rounded-full bg-dim"} />
-            {connected ? "live" : "reconnecting"}
-          </span>
-          <button onClick={() => setStageOpen((o) => !o)} className="rounded px-1.5 py-0.5 font-mono hover:bg-white/[0.05] hover:text-muted" title="Stage controls (D)">
-            stage · D
-          </button>
-        </span>
-      </footer>
 
       <StagePanel open={stageOpen} onClose={() => setStageOpen(false)} onPreview={(view) => setCard({ view, readOnly: true })} onRefresh={refresh} />
       {card && <ConsentCard key={card.view.id ?? `preview-${card.view.recipient.host}`} view={card.view} readOnly={card.readOnly} onClose={closeCard} />}
-    </div>
+    </AppShell>
   );
 }
