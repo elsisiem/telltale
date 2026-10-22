@@ -252,7 +252,7 @@ function SweepBadge({ state }: { state: UiState | null }) {
   );
 }
 
-function TopBar({ crumbs, state, actions, onGuide }: { crumbs: string[]; state: UiState | null; actions?: ReactNode; onGuide: () => void }) {
+function TopBar({ crumbs, state, actions, onGuide, showSweep }: { crumbs: string[]; state: UiState | null; actions?: ReactNode; onGuide: () => void; showSweep: boolean }) {
   const metrics = metricsFor(state);
   return (
     <header className="flex h-14 shrink-0 items-center gap-5 border-b border-line bg-surface px-5">
@@ -275,7 +275,7 @@ function TopBar({ crumbs, state, actions, onGuide }: { crumbs: string[]; state: 
         </dl>
       )}
       <div className={cx("flex shrink-0 items-center gap-2", metrics.length === 0 && "ml-auto")}>
-        <SweepBadge state={state} />
+        {showSweep && <SweepBadge state={state} />}
         {actions}
         <Button size="sm" variant="ghost" onClick={onGuide} title="How Telltale works (?)">
           <Icon name="help" className="size-3.5" />
@@ -315,7 +315,7 @@ export function AppShell({
       <div className="flex h-screen min-h-[600px] overflow-hidden bg-canvas">
         <Sidebar active={active} state={state} connected={connected} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar crumbs={crumbs} state={state} actions={actions} onGuide={() => setGuide(true)} />
+          <TopBar crumbs={crumbs} state={state} actions={actions} onGuide={() => setGuide(true)} showSweep={active !== "daylight"} />
           <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
         </div>
       </div>
