@@ -66,6 +66,11 @@ create table if not exists complaints (
   body text not null,
   status text not null default 'draft'
 );
+create table if not exists browser_memo (
+  host text primary key,
+  reason text not null,
+  seen_at timestamptz not null default now()
+);
 create table if not exists scans (
   id text primary key,
   started_at timestamptz not null default now(),

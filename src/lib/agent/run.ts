@@ -124,13 +124,17 @@ const FillInput = z.object({
 });
 
 export async function execute(session: BrowserSession, runId: string, name: string, input: unknown): Promise<{ text: string; finished?: string }> {
+  if (name === "navigate") {
+    const { url } = z.object({ url: z.string().url() }).parse(input);
+    const hadPage = !!session.page && !session.page.isClosed();
+    await session.ensure(url);
+    if (!hadPage) emit({ type: "agent.browser", runId, liveViewUrl: session.liveViewUrl });
+    await session.page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    return { text: `Opened ${session.page.url()}` };
+  }
+  if (!session.page && name !== "finish") return { text: "No page is open yet. Call navigate first." };
   const { page } = session;
   switch (name) {
-    case "navigate": {
-      const { url } = z.object({ url: z.string().url() }).parse(input);
-      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
-      return { text: `Opened ${page.url()}` };
-    }
     case "read_page":
       return { text: JSON.stringify(await snapshot(page)) };
     case "fill_form": {
@@ -189,12 +193,11 @@ export async function runAgent(task: string, opts: { runId?: string } = {}): Pro
   // Keys not scoped to a workspace must name one on every request.
   const client = new Anthropic(workspace ? { defaultHeaders: { "anthropic-workspace-id": workspace } } : {});
   const session = await openBrowser({ local: LOCAL_URL.test(task) });
-  emit({ type: "agent.browser", runId, liveViewUrl: session.liveViewUrl });
   // Stream what the browser shows, whichever browser it is, so the console can always display it.
   let lastUrl = "";
   let framing = false;
   const frames = setInterval(async () => {
-    if (framing || session.page.isClosed()) return;
+    if (framing || !session.page || session.page.isClosed()) return;
     framing = true;
     try {
       const data = (await session.page.screenshot({ type: "jpeg", quality: 50, timeout: 3000 })).toString("base64");
@@ -245,10 +248,10 @@ export async function runAgent(task: string, opts: { runId?: string } = {}): Pro
           const r = await execute(session, runId, use.name, use.input);
           finished ??= r.finished;
           results.push({ type: "tool_result", tool_use_id: use.id, content: r.text });
-          if (!session.page.isClosed()) lastUrl = session.page.url();
+          if (session.page && !session.page.isClosed()) lastUrl = session.page.url();
         } catch (err) {
           const message = (err as Error).message;
-          if (session.page.isClosed() || CRASH_RE.test(message)) {
+          if ((session.page && session.page.isClosed()) || CRASH_RE.test(message)) {
             const from = session.kind;
             await session.recover(lastUrl);
             emit({ type: "agent.browser", runId, liveViewUrl: session.liveViewUrl });
