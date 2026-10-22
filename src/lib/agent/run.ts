@@ -99,7 +99,14 @@ const tools: Anthropic.Beta.BetaTool[] = [
 // With the synthetic stage persona, never submit contact details to a real business.
 const dryRun = () => process.env.TELLTALE_DRY_RUN === "1" || (process.env.TELLTALE_DRY_RUN !== "0" && loadProfile().synthetic === true);
 const SUBMIT_RE = /submit|get (my )?(free )?quotes?|see (my )?(rates|quotes)|sign ?up|create|register|send|request|finish|complete|view (my )?(rates|results)|continue|next/i;
-const LOCAL_URL = /(localhost|127\.0\.0\.1)(:\d+)?/;
+const LOCAL_URL = /\b(localhost|127\.0\.0\.1)(:\d+)?\b/;
+
+/** This app's own fictional demo pages (locally, or at TELLTALE_PUBLIC_URL when deployed). */
+function isOwnDemoPage(url: string): boolean {
+  const u = new URL(url);
+  const own = process.env.TELLTALE_PUBLIC_URL ? new URL(process.env.TELLTALE_PUBLIC_URL).host : null;
+  return (LOCAL_URL.test(u.host) || u.host === own) && u.pathname.startsWith("/demo/");
+}
 const CONTACT_KINDS = new Set<FieldKind>(["email", "phone", "fullName", "firstName", "lastName", "street"]);
 const contactSharedOn = new Set<string>();
 
