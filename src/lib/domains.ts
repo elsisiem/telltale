@@ -49,9 +49,10 @@ export function registrableDomain(hostOrUrl: string): string | null {
 /** Split a registry cell that may hold several URLs separated by ; , whitespace or "and". */
 export function splitUrls(cell: string): string[] {
   return cell
-    .split(/[;,\s]+|\band\b/i)
+    // Only a standalone "and" separates URLs; "\band\b" would also cut "privacy-and-requests".
+    .split(/[;,\s]+/)
     .map((p) => p.trim())
-    .filter((p) => p.length > 3 && p.includes("."));
+    .filter((p) => p.length > 3 && p.includes(".") && p.toLowerCase() !== "and");
 }
 
 export function emailDomain(email: string): string | null {
