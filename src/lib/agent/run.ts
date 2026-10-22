@@ -114,7 +114,7 @@ const FillInput = z.object({
   fields: z.array(z.object({ selector: z.string(), kind: z.enum(KINDS), label: z.string(), required: z.boolean() })),
 });
 
-async function execute(session: BrowserSession, runId: string, name: string, input: unknown): Promise<{ text: string; finished?: string }> {
+export async function execute(session: BrowserSession, runId: string, name: string, input: unknown): Promise<{ text: string; finished?: string }> {
   const { page } = session;
   switch (name) {
     case "navigate": {
@@ -133,7 +133,7 @@ async function execute(session: BrowserSession, runId: string, name: string, inp
         const value = result.values[f.selector];
         if (!value) continue;
         const el = page.locator(f.selector);
-        const tagName = await el.evaluate("(e) => e.tagName.toLowerCase()");
+        const tagName = await el.evaluate((e) => e.tagName.toLowerCase());
         if (tagName === "select") await el.selectOption({ label: value }).catch(() => el.selectOption(value));
         else await el.fill(value);
       }
@@ -145,7 +145,7 @@ async function execute(session: BrowserSession, runId: string, name: string, inp
       const { selector, value } = z.object({ selector: z.string(), value: z.string() }).parse(input);
       if (looksPersonal(value)) return { text: "Refused: that looks like personal information. Use fill_form so Telltale can decide." };
       const el = page.locator(selector).first();
-      const tagName = await el.evaluate("(e) => e.tagName.toLowerCase()");
+      const tagName = await el.evaluate((e) => e.tagName.toLowerCase());
       if (tagName === "select") await el.selectOption({ label: value }).catch(() => el.selectOption(value));
       else await el.fill(value);
       return { text: `Set ${selector}` };
