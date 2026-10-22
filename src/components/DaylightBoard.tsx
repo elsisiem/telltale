@@ -281,7 +281,10 @@ export function DaylightBoard() {
             </div>
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[13px] text-muted">
-            <span>Signals are what a search engine sees; a blocked page may be bot protection, not hiding.</span>
+            <span>
+              Signals are what a search engine sees; a blocked page may be bot protection, not hiding.
+              {!running && !!data?.scan?.summary?.carriedOver && ` ${data.scan.summary.carriedOver} blocked this sweep, so their last conclusive result is shown.`}
+            </span>
             {data?.scan && (
               <span className="font-mono text-[12px] text-dim">
                 last sweep {fmtStamp(data.scan.startedAt)}

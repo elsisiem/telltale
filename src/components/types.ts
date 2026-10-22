@@ -81,11 +81,11 @@ export type ReceiptResponse = { verified: boolean; receipt: Record<string, unkno
 export type DaylightStatus = "visible" | "hidden" | "blocked" | "unreachable";
 export type DaylightSignal = { type: string; detail: string };
 export type HiddenKind = "own-optout" | "own-policy" | "vendor-portal";
-export type DaylightResult = { brokerId: string; name: string; url: string; status: DaylightStatus; signals: DaylightSignal[]; kind?: HiddenKind | null };
+export type DaylightResult = { brokerId: string; name: string; url: string; status: DaylightStatus; signals: DaylightSignal[]; kind?: HiddenKind | null; observedAt?: string; carried?: boolean };
 export type DaylightScan = {
   id: string;
   startedAt: string;
   finishedAt: string | null;
-  summary: { total: number; counts: Record<DaylightStatus, number>; hidden: unknown[] } | null;
+  summary: { total: number; counts: Record<DaylightStatus, number>; hidden: unknown[]; carriedOver?: number } | null;
 };
 export type DaylightResponse = { scan: DaylightScan | null; results: DaylightResult[] };
