@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     disclosureId ? [disclosureId] : [],
   );
   const disc = rows[0];
-  if (!disc?.alias_email) return NextResponse.json({ error: "No tagged disclosure to a registered broker yet. Run the agent first." }, { status: 400 });
+  if (!disc?.alias_email) return NextResponse.json({ error: "Nothing to replay yet: no registered broker has received a tagged email. Run the People-search account task and release its consent card, then replay." }, { status: 400 });
 
   const created = new Date(disc.created_at);
   const { rows: existing } = await d.query("select 1 from requests where kind = 'optout' and tag_code = (select tag_code from disclosures where id = $1)", [disc.id]);

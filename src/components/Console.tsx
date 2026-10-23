@@ -166,7 +166,7 @@ export function Console() {
         </div>
       )}
 
-      <StagePanel open={stageOpen} onClose={() => setStageOpen(false)} onPreview={(view) => setCard({ view, readOnly: true })} onRefresh={refresh} />
+      <StagePanel open={stageOpen} onClose={() => setStageOpen(false)} onPreview={(view) => setCard({ view, readOnly: true })} onRefresh={refresh} state={state} />
       {card && <ConsentCard key={card.view.id ?? `preview-${card.view.recipient.host}`} view={card.view} readOnly={card.readOnly} onClose={closeCard} />}
     </AppShell>
   );

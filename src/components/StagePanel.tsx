@@ -2,14 +2,19 @@
 
 import { useState } from "react";
 import { api } from "./format";
-import type { CardView } from "./types";
+import type { CardView, UiState } from "./types";
 import { useToast } from "./Toast";
-import { Button, Icon } from "./ui";
+import { Button, Icon, TagCode } from "./ui";
 
 const PREVIEW_SUGGESTIONS = ["https://www.bestautoinsurance.com", "https://www.spokeo.com/signup", "https://www.uplead.com", "https://bayview-dental.fly.dev"];
 
-export function StagePanel({ open, onClose, onPreview, onRefresh }: { open: boolean; onClose: () => void; onPreview: (v: CardView) => void; onRefresh: () => void }) {
+export function StagePanel({ open, onClose, onPreview, onRefresh, state }: { open: boolean; onClose: () => void; onPreview: (v: CardView) => void; onRefresh: () => void; state: UiState | null }) {
   const toast = useToast();
+  // The replay writes to the newest tagged email given to a registered broker, the same row the API picks.
+  const target = state?.disclosures
+    .filter((d) => d.alias_email && d.broker_ids.length > 0)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))
+    .at(-1);
   const [url, setUrl] = useState(PREVIEW_SUGGESTIONS[0]);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
@@ -65,10 +70,18 @@ export function StagePanel({ open, onClose, onPreview, onRefresh }: { open: bool
       </div>
 
       <div className="p-3">
-        <Button variant="secondary" className="w-full border-accent text-accent-ink hover:border-accent-ink" onClick={replay} busy={busy === "replay"}>
+        <Button variant="secondary" className="w-full border-accent text-accent-ink hover:border-accent-ink" onClick={replay} busy={busy === "replay"} disabled={!target}>
           Replay day 47 (simulated)
         </Button>
-        <p className="mt-1.5 text-[11.5px] text-muted">Fictional sender northgate-leads.example. Everything it produces is labeled SIMULATED.</p>
+        {target ? (
+          <p className="mt-1.5 flex items-center gap-1.5 text-[11.5px] text-muted">
+            Writes to the address given to <span className="font-mono text-ink">{target.recipient_host}</span>
+            <TagCode code={target.tag_code} accent />
+          </p>
+        ) : (
+          <p className="mt-1.5 text-[11.5px] text-accent-ink">Needs a registered broker that got a tagged email. Run the People-search account task and release its card first.</p>
+        )}
+        <p className="mt-1 text-[11.5px] text-muted">Fictional sender northgate-leads.example. Everything it produces is labeled SIMULATED.</p>
       </div>
 
       <div className="border-t border-line p-3">
