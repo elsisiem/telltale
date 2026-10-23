@@ -240,8 +240,8 @@ export function Landing({ facts }: { facts: PublicFacts }) {
               <p className="mt-2 text-[14.5px] leading-relaxed text-ink">A consent layer for the agent you already use, with tagged identities, receipts and enforcement handled for you.</p>
             </div>
             <div className="bg-surface p-6">
-              <p className="label">For teams that buy or share data</p>
-              <p className="mt-2 text-[14.5px] leading-relaxed text-ink">Daylight as a compliance feed: which vendors hide their opt-out pages, never registered, or contradict their own filings.</p>
+              <p className="label">For teams building agents</p>
+              <p className="mt-2 text-[14.5px] leading-relaxed text-ink">The same gate inside your agent: a registry check before any disclosure, tagged fields and signed receipts, so it never hands a user&apos;s details to a broker without asking. Daylight stays public.</p>
             </div>
           </div>
         </div>
