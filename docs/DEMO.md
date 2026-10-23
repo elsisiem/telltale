@@ -1,102 +1,101 @@
 # Telltale: 2-minute demo
 
-Rehearsed against the live site on 2026-10-22. The timings are measured.
+**The story:** my agent was about to hand my data to a data broker. Telltale stopped it, made the broker a legal promise in writing, and caught it breaking that promise.
 
-| Measured on https://telltale-app.fly.dev | |
-|---|---|
-| Spokeo task: **Run** to consent card | 16 to 20 s (3 of 3 runs) |
-| Real email to a tagged inbox: sent to traced as a leak | 4.5 s |
-| Model cost per Spokeo run | about $0.04 |
+**Hit these three points. None of them is something an alias can do.**
 
-## Ten minutes before
+1. **It stops the agent before anything is shared**, using the company's own filing with the State of California.
+2. **The AI never sees your data.** The agent asks for "an email field" and Telltale types the value.
+3. **A leak becomes a legal case**: a signed receipt, an opt-out with a legal deadline, and a complaint draft for the regulator.
+
+The tagged email is only how the leak gets caught. Mention it in one line and move on.
+
+Rehearsed against the live site on 2026-10-22: the consent card appears 16 to 20 seconds after **Run** (3 of 3 runs), and a run costs about $0.04.
+
+## Setup (2 minutes before)
 
 1. Sign in at **https://telltale-app.fly.dev/console** (user `telltale`, password from `.env.local`).
-2. Press **d** to open the stage controls, then **Reset demo**.
-3. Click the **Dental cleaning** preset, then **Run**. It finishes in about 13 seconds. Do not reset after this.
-4. Open **Identities**, press **Copy** on the `bayview-dental.fly.dev` card, and on your phone write an email to that address. Subject: "We found your profile". Leave it unsent.
-5. Open three tabs, in this order:
+2. Press **d**, then **Reset demo**. Close the panel with **d**.
+3. Open two tabs:
    - Tab 1: `/console?preset=people` (the Spokeo task is already filled in)
-   - Tab 2: `/identities`
-   - Tab 3: `/daylight` (it shows the latest sweep; there is no need to run one)
-6. Zoom to 110% so the room can read it, and silence notifications.
+   - Tab 2: `/daylight`
+4. Zoom to 110% and silence notifications.
 
-Rehearsing again? Repeat steps 2 to 4. The dental inbox address changes on every run.
+## The script
 
-## The run
+### 1 · The problem (0:00). Click **Run** first, then talk.
 
-### 0:00 · Hook. Click **Run** first, then talk.
+> "Personal agents fill in forms for us now. They hand our details to whoever asks, and some of those sites are data brokers: companies whose business is selling data about you. Nothing on the page tells you. Right now my agent is signing me up for Spokeo."
 
-> "Personal agents fill in forms for us now, and they hand our details to whoever asks. Some of those sites are data brokers, and nothing on the page says so. One car insurance quote site I tested is run by a registered broker that denied 13,539 of 15,040 deletion requests last year.
-> Right now my agent is signing me up for Spokeo, to see what it knows about me."
+### 2 · Telltale stops it (0:20). The card appears by itself.
 
-### 0:20 · Consent card. It appears by itself.
-
-> "Before it types anything, Telltale stops it. Spokeo is registered with the State of California, and this is its own filing: in the past year it sold or shared consumer data with law enforcement without a subpoena or court order. So the email goes out tagged."
+> "Telltale stopped it before a single letter was typed. Spokeo is a registered data broker, and this is from its own filing with California: it shared people's data with law enforcement without a subpoena. So I decide what goes through. The email goes, but marked."
 
 Click **Release with these choices**.
 
-> "And Claude never saw my email. It asked for an email field, and Telltale typed the value."
+> "And Claude never saw my email. The agent asked for an email field, and Telltale typed the value."
 
-### 0:40 · Identities (Tab 2)
+### 3 · Make them promise (0:45). In the ledger, on the Spokeo entry:
 
-> "This is what Telltale actually gave out. Every site gets its own version of me. Spokeo got an inbox nobody else has. The dental office I booked earlier got a different one. They are real inboxes, so mail still reaches me."
+Click **Send opt-out**, then **read letter**.
 
-Send the email from your phone.
+> "This is what an alias can't do. Telltale writes Spokeo a legal opt-out: you may not sell or share this. California gives them 15 business days, and the deadline is tracked right here. That marked email is how we'll know if they don't comply."
 
-> "I just wrote to the dental office's address from my own phone. I'm not the dental office."
+### 4 · Catch them (1:05)
 
-Within about 5 seconds the dental card turns orange and says **Leaked**, and **Leaks traced** goes to 1. Scroll so the dental card is on screen.
+Press **d**, then **Replay day 47 (simulated)**. Close the panel.
 
-> "Traced. Real mail, five seconds."
-
-### 1:05 · Enforce (Tab 1)
-
-Press **d**, then **Replay day 47 (simulated)**.
-
-> "Brokers take weeks, so this is day 47, with a fictional sender. Telltale already sent Spokeo an opt-out with the legal deadline of 15 business days. Now a lead company writes to the address only Spokeo had, after that deadline."
+> "Day 47, simulated with a fictional company. The address only Spokeo ever had just reached a lead seller, after the deadline. That's not spam any more. It's a broken legal request with a date on it."
 
 Click **Draft complaint**.
 
-> "That's evidence: the signed consent receipt, the deadline, Spokeo's own filing, and a complaint draft for the state privacy agency. I decide whether to file it."
+> "Telltale builds the case: what Spokeo got, when it was told not to sell it, its own filing, and a complaint ready for the state regulator. I decide whether to file."
 
-### 1:30 · Daylight (Tab 3)
+### 5 · At scale (1:35). Tab 2, Daylight.
 
-> "We also check the opt-out page of every registered broker, all 603. Eighteen tell search engines to hide their own opt-out page."
+> "And we don't wait for leaks. Daylight checks every registered broker in California, all 603, in about half a minute. Eighteen hide their own opt-out page from search engines."
 
 Click **Spokeo, Inc.** in the list on the right.
 
 > "Spokeo is one of them. That's the header, word for word."
 
-### 1:45 · Close
+### 6 · Close (1:50)
 
-> "Telltale. Know who gets your data, mark it, and make them answer for it. It runs on the state's own filings, and every card says what that data can't tell you."
+> "Agents are going to fill in millions of forms for us. Telltale is the consent layer they're missing: it knows who's a broker, asks you first, and turns your data into evidence."
 
 ### Running long?
 
-- Cut the car insurance sentence from the hook (about 8 seconds).
-- Cut Daylight and go straight to the close (about 15 seconds).
-- Keep the consent card, Identities and the live email. They are the parts only Telltale does.
+- Skip **read letter** in step 3 (about 5 seconds).
+- Skip Daylight and go straight to the close (about 15 seconds).
+- Never cut steps 2 and 4. They are the product.
 
 ## If something breaks
 
 | Problem | What to do |
 |---|---|
-| No consent card after 30 seconds | Say "live sites are slow", press **Run** again. Last resort: stage controls, **Preview a site**, `https://www.spokeo.com/signup` shows the same card read-only. Replay needs a release, so skip to Daylight. |
-| The email takes longer than 10 seconds | "It's on its way." Move on to the replay. The dental card will flip while you talk. |
+| No consent card after 30 seconds | "Live sites are slow." Press **Run** again. If it fails twice: press **d**, **Preview a site**, `https://www.spokeo.com/signup` shows the same card read-only. Replay needs a release, so then go to Daylight. |
+| Replay button is greyed out | The Spokeo card was not released. Its hint says what to run. |
 | The browser picture is too small | Click it, or press **Expand**. |
-| AgentMail is down | Tagged emails fall back to plus-addressing and attribution still works. Skip the phone email. |
 | No network for Daylight | `/daylight` shows the committed 2026-10-22 snapshot. |
-| A judge asks what a mark means | **Guide** (or `?`) explains every mark on screen. |
+| A judge asks what a mark means | **Guide** (or `?`) explains everything on screen. |
 
-Do not press **Draft complaint** on the dental leak. The dental office is fictional and is not a broker; the complaint flow is for the Spokeo replay.
+## Proof it's live (for questions)
+
+If a judge asks "is any of this real?", this takes 15 seconds. Prepare it during setup: after **Reset demo**, click the **Dental cleaning** preset and **Run**, then open **Identities** and **Copy** the `bayview-dental.fly.dev` inbox. Draft an email to it on your phone.
+
+> "That address went to one place only: a fictional dental office. I'm emailing it from my own phone now."
+
+Within about 5 seconds the dental card on **Identities** says **Leaked**. Real mail, traced live, measured at 4.5 seconds. Do not press **Draft complaint** on the dental leak; the office is not a broker.
 
 ## Questions judges may ask
 
-- **"Isn't this just email aliases?"** Aliases tell you who leaked after the fact. Telltale decides before anything is typed, using the recipient's own legal filing, marks every field it lets through, and turns a leak after an opt-out deadline into a dated violation with evidence.
-- **"How do you know they're a broker?"** It's their own registration with the California Privacy Protection Agency, quoted. Every card links the source and its limits: self-reported, California only, request counts from 2024.
+- **"Isn't this just email aliases?"** "Aliases tell you who leaked, after it's too late, and only for email. Telltale checks the company's legal filing before anything is typed, marks your name and address too, and sends the opt-out. So if your data shows up after the deadline, you don't have a hunch. You have a dated record of a broken rule."
+- **"How do you know they're a broker?"** It's their own registration with the California Privacy Protection Agency, quoted. Every card shows the source and its limits: self-reported, California only, request counts from 2024.
 - **"Couldn't a broker strip the tag?"** From a plus address, yes. Not from a dedicated inbox or an `Attn` line, because the address itself is the tag.
 - **"Is tagging lying?"** No. Every tagged value works and reaches you. Fields the law expects to be true (SSN, government ID, financial account, date of birth) are never altered; the only choice is whether to share them.
 - **"Why doesn't the model see the data?"** The agent describes fields by type and the gate types the values. The model provider is a recipient too.
-- **"Did you just sign a fake person up for Spokeo?"** No. Maya is synthetic and dry run is on, so Telltale fills the form and stops before submitting. It never emails a real company in that mode.
-- **"What does it cost to run?"** About four cents of model use for the Spokeo task, with prompt caching. Daylight checks all 603 brokers in under a minute.
-- **"Who pays?"** People pay for proof, about $10 a month: receipts, deadlines and evidence when a broker breaks the rules. Companies building personal agents license the consent layer, because their agent handing a user's data to a broker is their problem too. Daylight stays free and public. Pricing is a starting point, not tested.
+- **"Did you just sign a fake person up for Spokeo?"** No. Maya is synthetic and dry run is on, so Telltale fills the form and stops before submitting. In that mode it never emails a real company; the opt-out is prepared, not sent.
+- **"Does a tag being contacted prove Spokeo sold it?"** It proves the data moved. The strong case is first contact after the opt-out deadline, which is why Telltale records the deadline.
+- **"Can I see what each site got?"** Yes, the **Identities** page: your real details next to what each site received, its inbox and its mail.
+- **"Who pays?"** People pay about $10 a month for proof: receipts, deadlines and evidence. Companies building personal agents license the consent layer, because their agent handing a user's data to a broker is their problem too. Daylight stays free and public. Pricing is a starting point, not tested.
+- **"What does it cost to run?"** About four cents of model use for the Spokeo task, with prompt caching.
