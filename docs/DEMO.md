@@ -99,4 +99,4 @@ Do not press **Draft complaint** on the dental leak. The dental office is fictio
 - **"Why doesn't the model see the data?"** The agent describes fields by type and the gate types the values. The model provider is a recipient too.
 - **"Did you just sign a fake person up for Spokeo?"** No. Maya is synthetic and dry run is on, so Telltale fills the form and stops before submitting. It never emails a real company in that mode.
 - **"What does it cost to run?"** About four cents of model use for the Spokeo task, with prompt caching. Daylight checks all 603 brokers in under a minute.
-- **"Who pays?"** People pay for proof, about $10 a month. Companies that buy data pay for Daylight as a compliance feed on every broker.
+- **"Who pays?"** People pay for proof, about $10 a month: receipts, deadlines and evidence when a broker breaks the rules. Companies building personal agents license the consent layer, because their agent handing a user's data to a broker is their problem too. Daylight stays free and public. Pricing is a starting point, not tested.
