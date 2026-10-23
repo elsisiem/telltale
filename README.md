@@ -14,7 +14,7 @@
   <a href="https://telltale-app.fly.dev/tour"><img alt="Tour" src="https://img.shields.io/badge/tour-7%20steps-ff4f00?style=flat-square"></a>
   <img alt="Next.js 15" src="https://img.shields.io/badge/Next.js-15-111318?style=flat-square">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-44%20passing-16a34a?style=flat-square">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-45%20passing-16a34a?style=flat-square">
 </p>
 
 <p align="center">
@@ -147,7 +147,7 @@ pnpm dev                          # http://localhost:3000
 | `TELLTALE_VAULT_KEY`, `TELLTALE_RECEIPT_KEY` | Encryption and signing keys in deployment | Key files generated in `.telltale/keys` |
 
 ```bash
-pnpm test        # 44 tests: policy, gate, receipts, vault, leak attribution, Daylight, browser tools
+pnpm test        # 45 tests: policy, gate, receipts, vault, identities, leak attribution, Daylight, browser tools
 pnpm daylight    # sweep all 603 brokers from the command line (about a minute)
 ```
 
