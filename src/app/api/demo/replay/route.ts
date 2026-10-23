@@ -24,6 +24,13 @@ export async function POST(req: Request) {
   const disc = rows[0];
   if (!disc?.alias_email) return NextResponse.json({ error: "Nothing to replay yet: no registered broker has received a tagged email. Run the People-search account task and release its consent card, then replay." }, { status: 400 });
 
+  // One replay per disclosure, so a second press on stage returns the same leak instead of a copy.
+  const { rows: prior } = await d.query<{ id: string; classification: string }>("select id, classification from messages where disclosure_id = $1 and replay = true order by received_at limit 1", [disc.id]);
+  if (prior[0]) {
+    const { rows: leak } = await d.query<{ id: string }>("select id from leaks where message_id = $1", [prior[0].id]);
+    return NextResponse.json({ messageId: prior[0].id, classification: prior[0].classification, leakId: leak[0]?.id, simulated: true, day, already: true });
+  }
+
   const created = new Date(disc.created_at);
   const { rows: existing } = await d.query("select 1 from requests where kind = 'optout' and tag_code = (select tag_code from disclosures where id = $1)", [disc.id]);
   if (!existing.length) await sendOptOut(disc.id, { sentAt: created });

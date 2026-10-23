@@ -37,8 +37,9 @@ export function StagePanel({ open, onClose, onPreview, onRefresh, state }: { ope
 
   const replay = () =>
     act("replay", async () => {
-      const r = await api<{ classification: string; day: number; leakId?: string }>("/api/demo/replay", { json: {} });
+      const r = await api<{ classification: string; day: number; leakId?: string; already?: boolean }>("/api/demo/replay", { json: {} });
       onRefresh();
+      if (r.already) return `Already replayed for this site${r.leakId ? " · leak traced" : ""}`;
       return `Replayed day ${r.day}: ${r.classification}${r.leakId ? " · leak traced" : ""}`;
     });
   const preview = () =>
