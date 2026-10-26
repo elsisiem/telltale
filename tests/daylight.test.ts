@@ -76,6 +76,8 @@ let base: string;
 
 beforeAll(async () => {
   server = http.createServer((req, res) => {
+    // No keep-alive: a reused socket can be reset while the event loop is blocked (PGlite start-up).
+    res.setHeader("connection", "close");
     const html = (status: number, body: string, headers: Record<string, string> = {}) => {
       res.writeHead(status, { "content-type": "text/html", ...headers });
       res.end(body);
