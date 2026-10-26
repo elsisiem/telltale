@@ -10,25 +10,25 @@
 </p>
 
 <p align="center">
-  <a href="https://telltale-app.fly.dev"><img alt="Live site" src="https://img.shields.io/badge/live-telltale--app.fly.dev-111318?style=flat-square"></a>
-  <a href="https://telltale-app.fly.dev/tour"><img alt="Tour" src="https://img.shields.io/badge/tour-7%20steps-ff4f00?style=flat-square"></a>
-  <img alt="Next.js 15" src="https://img.shields.io/badge/Next.js-15-111318?style=flat-square">
-  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-45%20passing-16a34a?style=flat-square">
+  <a href="https://telltale-app.fly.dev">Live demo</a> ·
+  <a href="https://telltale-app.fly.dev/tour">Tour</a> ·
+  <a href="#how-it-works">How it works</a> ·
+  <a href="#run-locally">Run locally</a> ·
+  <a href="docs/DEMO.md">Demo script</a>
 </p>
 
 <p align="center">
-  <a href="https://telltale-app.fly.dev">Overview</a> ·
-  <a href="https://telltale-app.fly.dev/tour">Tour</a> ·
-  <a href="https://telltale-app.fly.dev/console">Console</a> ·
-  <a href="docs/DEMO.md">Demo script</a>
+  <a href="https://github.com/elsisiem/telltale/actions/workflows/ci.yml"><img src="https://github.com/elsisiem/telltale/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/license-MIT-111318?style=flat-square" alt="MIT license">
+  <img src="https://img.shields.io/badge/Next.js-15-111318?style=flat-square&logo=nextdotjs&logoColor=white" alt="Next.js 15">
+  <img src="https://img.shields.io/badge/TypeScript-5-111318?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript 5">
 </p>
 
 <p align="center">
   <img src="docs/images/console.png" alt="The Telltale console: the Sentry pipeline, the agent, the data trail and the ledger" width="100%">
 </p>
 
-## Overview
+## Why
 
 Personal agents now fill in forms for people: insurance quotes, sign-ups, appointments. They type a name, an email and an address into whatever form is in front of them, and nobody checks who receives it.
 
@@ -122,7 +122,7 @@ The last row is the reason for the demo. A car insurance comparison site looks l
 | Exa company search | Matching brand domains that brokers did not list | A name match can be wrong. Used only when the domain itself is not in the registry. |
 | Inbound mail on tagged inboxes | Leak attribution | A tag being contacted proves the data moved, not on its own who sold it. The strong case is first contact after the opt-out deadline. |
 
-## Getting started
+## Run locally
 
 Requirements: Node.js 20 or later, pnpm 10.
 
@@ -130,30 +130,65 @@ Requirements: Node.js 20 or later, pnpm 10.
 git clone https://github.com/elsisiem/telltale.git
 cd telltale
 pnpm install
-npx playwright install chromium
+npx playwright install chromium   # only for the local browser fallback
 cp .env.example .env.local        # add ANTHROPIC_API_KEY; everything else is optional
 pnpm dev                          # http://localhost:3000
 ```
 
-| Variable | Purpose | Without it |
-|---|---|---|
-| `ANTHROPIC_API_KEY` | The live agent (Claude Sonnet 5.5, prompt caching, refusal fallback) | Every screen works; the agent does not run |
-| `ANTHROPIC_WORKSPACE_ID` | Only for keys not scoped to a workspace | |
-| `AGENTMAIL_API_KEY` | One real inbox per recipient, inbound attribution | Plus-addressing on the person's email |
-| `KERNEL_API_KEY` | Hosted browser for the agent | Local Chromium |
-| `EXA_API_KEY` | Company lookup for unknown domains | Registry domains and names only |
-| `DATABASE_URL` | Neon Postgres | Embedded PGlite in `.telltale/db` |
-| `TELLTALE_PASSWORD` | HTTP Basic auth for the app (user `telltale`) | No authentication |
-| `TELLTALE_VAULT_KEY`, `TELLTALE_RECEIPT_KEY` | Encryption and signing keys in deployment | Key files generated in `.telltale/keys` |
-
 ```bash
+pnpm lint        # ESLint (next/core-web-vitals, next/typescript)
 pnpm test        # 45 tests: policy, gate, receipts, vault, identities, leak attribution, Daylight, browser tools
 pnpm daylight    # sweep all 603 brokers from the command line (about a minute)
 ```
 
-## Deployment
+The tests need no keys, network access or browser.
+
+## Configuration
+
+Nothing is required to run locally. A deployment needs the rows marked Deployed. Set variables in `.env.local` locally or with `fly secrets set` on Fly.io. `.env.example` lists all of them.
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | For the live agent | Runs the agent (Claude Sonnet 5.5, prompt caching, refusal fallback). Without it every screen works and the agent does not run. |
+| `ANTHROPIC_WORKSPACE_ID` | No | Workspace ID (`wrkspc_...`), only for keys not scoped to a workspace. |
+| `TELLTALE_MODEL` | No | Agent model. Default `claude-sonnet-5-5`. |
+| `AGENTMAIL_API_KEY` | No | One real inbox per recipient and inbound attribution. Without it: plus-addressing on the person's email. |
+| `KERNEL_API_KEY` | No | Hosted browser with live view. Without it: local Chromium. |
+| `EXA_API_KEY` | No | Company lookup for domains missing from the registry. Without it: registry domains and names only. |
+| `DATABASE_URL` | No | Neon Postgres. Without it: embedded PGlite. |
+| `TELLTALE_DB_DIR` | No | PGlite directory. Default `.telltale/db`; `memory://` keeps nothing on disk (the tests use it). |
+| `TELLTALE_PASSWORD` | Deployed | HTTP Basic password for the app (user `telltale`). Without it: no authentication. |
+| `TELLTALE_VAULT_KEY` | Deployed | Base64 of 32 random bytes. Encrypts the saved profile. Without it: key file in `.telltale/keys`. |
+| `TELLTALE_RECEIPT_KEY` | Deployed | Base64 of an Ed25519 private key in PEM form. Signs consent receipts. Without it: key file in `.telltale/keys`. |
+| `TELLTALE_PUBLIC_URL` | Deployed | The deployment's public URL. Pages under `/demo/` on that host count as the app's own fictional demo pages. |
+| `TELLTALE_DEMO_HOSTS` | No | Comma-separated fictional demo hosts where submitting is safe. Default `bayview-dental.fly.dev`. |
+| `TELLTALE_DRY_RUN` | No | `1` always fills forms without submitting. `0` turns dry run off while no profile is saved. Unset: the synthetic persona is dry run and a saved profile's setting decides. |
+| `TELLTALE_HEADLESS` | No | `1` runs the local Chromium without a window. It is always headless on Fly.io. |
+| `TELLTALE_BROWSER` | No | `local` forces the local Chromium even when `KERNEL_API_KEY` is set. |
+
+The platform sets `FLY_APP_NAME` and `NEXT_RUNTIME`, and the Dockerfile sets `BUILD_STANDALONE`. You do not set them.
+
+## Deploy
 
 The live site runs on one always-on Fly.io machine in Chicago, next to its Neon Postgres database in AWS us-east-2. Pending consent cards and the event stream live in that process, so it never scales out or sleeps. The fictional dental office used in the demo is a separate static site in [`demo-site/`](demo-site).
+
+One-time setup (requires [flyctl](https://fly.io/docs/flyctl/) and a Fly.io account):
+
+```bash
+fly apps create telltale-app
+fly secrets set \
+  TELLTALE_PASSWORD="<choose a password>" \
+  TELLTALE_VAULT_KEY="$(openssl rand -base64 32)" \
+  TELLTALE_RECEIPT_KEY="$(openssl genpkey -algorithm ed25519 | base64 | tr -d '\n')" \
+  ANTHROPIC_API_KEY="<key>" \
+  DATABASE_URL="<Neon connection string>"
+fly secrets set AGENTMAIL_API_KEY="<key>" KERNEL_API_KEY="<key>" EXA_API_KEY="<key>"   # optional
+fly apps create bayview-dental
+```
+
+Keep the vault and receipt keys. Without the vault key the saved profile cannot be decrypted, and without the receipt key earlier receipts no longer verify. No volume is mounted, so without `DATABASE_URL` the embedded database is wiped on each deploy. The app name `telltale-app`, `TELLTALE_PUBLIC_URL` and `TELLTALE_DEMO_HOSTS` are set in `fly.toml`; change them if you pick other app names.
+
+Then deploy:
 
 ```bash
 fly deploy --remote-only --ha=false              # builds the image on Fly; no local Docker needed
@@ -170,7 +205,7 @@ fly deploy --remote-only --ha=false              # builds the image on Fly; no l
 | `/evidence/:id` | Exhibit and complaint draft for a traced leak | Password |
 | `/profile` | Encrypted details and dry-run setting | Password |
 
-## Project structure
+## Project layout
 
 ```
 src/
@@ -195,8 +230,20 @@ demo-site/             the fictional dental office
 tests/                 Vitest suites
 ```
 
-## Built for
+## Status
 
-The super{set} National Renaissance Hackathon, Personal Agents and Data Privacy track.
+- The live site publishes the overview and the tour. The console, Identities, Daylight and evidence pages sit behind a password.
+- The demo persona is synthetic and always runs dry: forms are filled and not submitted, and opt-outs are prepared, not sent.
+- Coverage is the California registry only. A company missing from it is not proof of safety.
+- Letters and complaints are drafts. Nothing is sent to a regulator automatically.
+- Pending consent cards and the event stream are held in process memory, so run a single instance.
 
 Not legal advice. Telltale drafts documents; people decide and file.
+
+## Credits
+
+Built for the super{set} National Renaissance Hackathon, Personal Agents and Data Privacy track, with Claude, AgentMail, Kernel, Exa and Neon.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
