@@ -10,7 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-process.env.TELLTALE_DB_DIR ??= path.join(process.cwd(), ".telltale", "db");
+process.env.TELLTALE_DB_DIR ||= path.join(process.cwd(), ".telltale", "db");
 // PGlite creates only the last path segment; make sure .telltale/ exists on a fresh checkout.
 fs.mkdirSync(path.dirname(process.env.TELLTALE_DB_DIR), { recursive: true });
 
