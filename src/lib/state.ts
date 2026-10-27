@@ -24,7 +24,7 @@ export async function dashboardState() {
     sweep,
     registry: { brokers: registry.length, source: REGISTRY_SOURCE },
     integrations: {
-      model: process.env.ANTHROPIC_API_KEY ? (process.env.TELLTALE_MODEL ?? "claude-sonnet-5-5") : null,
+      model: process.env.ANTHROPIC_API_KEY ? (process.env.TELLTALE_MODEL || "claude-sonnet-5-5") : null,
       agentmail: !!process.env.AGENTMAIL_API_KEY,
       kernel: !!process.env.KERNEL_API_KEY,
       exa: !!process.env.EXA_API_KEY,

@@ -10,7 +10,7 @@ import { openBrowser, snapshot, type BrowserSession } from "./browser";
 // The personal agent. It browses and fills forms for the person, but it never holds their
 // details: it describes each field by kind, and Telltale's gate decides and types the values.
 
-const MODEL = process.env.TELLTALE_MODEL ?? "claude-sonnet-5-5";
+const MODEL = process.env.TELLTALE_MODEL || "claude-sonnet-5-5";
 const MAX_TURNS = 25;
 
 const KINDS = [
@@ -103,7 +103,7 @@ const LOCAL_URL = /\b(localhost|127\.0\.0\.1)(:\d+)?\b/;
 
 /** This app's own fictional demo pages (locally, or at TELLTALE_PUBLIC_URL when deployed). */
 // Fictional businesses Telltale controls for demos (comma-separated hosts). Submitting there is safe.
-const DEMO_HOSTS = new Set((process.env.TELLTALE_DEMO_HOSTS ?? "bayview-dental.fly.dev").split(",").map((h) => h.trim()).filter(Boolean));
+const DEMO_HOSTS = new Set((process.env.TELLTALE_DEMO_HOSTS || "bayview-dental.fly.dev").split(",").map((h) => h.trim()).filter(Boolean));
 
 function isOwnDemoPage(url: string): boolean {
   const u = new URL(url);
